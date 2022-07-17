@@ -1,21 +1,16 @@
 pub(crate) mod builder;
+pub(crate) mod neuron;
 
 /// A link between two `Neuron`s.
 /// 
 /// This is the 'weight' of the connection; it can be positive, negative or null.
 pub type Synapse = f64;
 
-/// A neuron in the neural network.
-/// 
-/// `Neuron`s contain parameters such as their reset potential, rest potential and threshold.
-pub struct Neuron {
+/// Represents the 'spike' that stimulates a neuron in a spiking neural network.
+pub struct Spike {
     // TODO
 }
 
-/// Represents the 'spike' that stimulates a neuron in a spiking neural network.
-pub struct _Impulse {
-    // TODO
-}
 
 /// The Neural Network itself.
 /// 

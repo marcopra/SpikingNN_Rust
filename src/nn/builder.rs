@@ -7,7 +7,9 @@
 use std::marker::PhantomData;
 
 use crate::{NN, Synapse};
-use super::Neuron;
+// use crate::nn::neuron::Neuron è la stessa cosa della riga sotto?
+use super::neuron::Neuron;
+use super::neuron::NeuronConfig;
 
 pub trait Dim: Copy {
     fn to_usize(self) -> usize;
