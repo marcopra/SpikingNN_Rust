@@ -6,32 +6,6 @@ TODO: Implementare la possibilità di modificare
 i parametri dei vari neuroni singolarmente
 */
 
-/// Neuron
-/// ------
-/// 
-/// A struct for a single Neuron of the SNN.
-/// Each Neuron has its own parametres such as _current membrane tension_, _threshold tension_ etc...
-/// 
-/// Usage Example
-/// --------------
-/// 
-/// ```
-/// let neuron = Neuron::new(parm1, parm2, ...)
-/// ```
-/// 
-/// 
-/// 
-
-pub struct Neuron{
-    v_mem_current: f64,
-    v_mem_old: f64,
-    v_rest: f64,
-    v_reset: f64,
-    v_threshold: f64,
-    tau: f64,
-    ts_old: u128,  
-    ts_curr: u128,
-}
 
 /// NeuronConfig
 /// ------------
@@ -57,6 +31,52 @@ pub struct NeuronConfig{
     v_reset: f64,
     v_threshold: f64,
     tau: f64,
+}
+
+impl NeuronConfig {
+    pub fn new(
+        v_mem_current: f64,
+        v_rest: f64,
+        v_reset: f64,
+        v_threshold: f64,
+        tau: f64,) -> NeuronConfig{
+
+        NeuronConfig{
+            v_mem_current: v_mem_current,
+            v_rest: v_rest,
+            v_reset: v_reset,
+            v_threshold: v_threshold,
+            tau: tau,
+        }
+    }
+    
+}
+
+
+/// Neuron
+/// ------
+/// 
+/// A struct for a single Neuron of the SNN.
+/// Each Neuron has its own parametres such as _current membrane tension_, _threshold tension_ etc...
+/// 
+/// Usage Example
+/// --------------
+/// 
+/// ```
+/// let neuron = Neuron::new(parm1, parm2, ...)
+/// ```
+/// 
+/// 
+/// 
+pub struct Neuron{
+    v_mem_current: f64,
+    v_mem_old: f64,
+    v_rest: f64,
+    v_reset: f64,
+    v_threshold: f64,
+    tau: f64,
+    ts_old: u128,  
+    ts_curr: u128,
 }
 
 impl Neuron {
