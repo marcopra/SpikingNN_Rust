@@ -1,6 +1,10 @@
 use core::panic;
-
 use libm::exp;
+
+/*
+TODO: Implementare la possibilità di modificare 
+i parametri dei vari neuroni singolarmente
+*/
 
 /// Neuron
 /// ------
@@ -71,6 +75,15 @@ impl Neuron {
         }
     }
 
+    /// Create a new array of Neuron structs, starting from a given array of NeuronConfig.
+    /// 
+    /// If the array of NeuronConfig contains a single element, it will be used for 
+    /// all the _'dim'_ neurons required.
+    /// Otherwise it will create a Neuron for each specified NeuronConfig
+    /// 
+    /// # Panic
+    /// Panics if the NeuronConfig array has a lenght (greater than one) 
+    /// which differs from _'dim'_.
     pub fn new_vec(ncs: Vec<NeuronConfig>, dim: usize) -> Vec<Neuron>{
         
         let mut res: Vec<Neuron> = Vec::with_capacity(dim);
