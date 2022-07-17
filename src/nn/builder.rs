@@ -9,16 +9,29 @@ use std::marker::PhantomData;
 use crate::{NN, Synapse};
 use super::Neuron;
 
-pub trait Dim { }
+pub trait Dim: Copy {
+    fn to_usize(self) -> usize;
+}
 
-struct Zero;
-impl Dim for Zero { }
+#[derive(Clone, Copy)]
+pub struct Zero;
+impl Dim for Zero {
+    fn to_usize(self) -> usize { 0 }
+}
 
-struct NotZero<const N: usize>;
-impl<const N: usize> Dim for NotZero<N> { }
+#[derive(Clone, Copy)]
+pub struct NotZero<const N: usize>;
+impl<const N: usize> Dim for NotZero<N> {
+    fn to_usize(self) -> usize { N }
+}
 
-struct Dynamic;
-impl Dim for Dynamic { }
+#[derive(Clone, Copy)]
+pub struct Dynamic {
+    value: usize
+}
+impl Dim for Dynamic {
+    fn to_usize(self) -> usize { self.value }
+}
 
 /// Helper type that implements the builder pattern for `NN`.
 /// 
@@ -73,7 +86,7 @@ impl NNBuilder<Dynamic> {
     /// Add a layer to the neural network.
     /// 
     /// Note: input and intra weights are flattened row-major matrices (one row for each neuron in the layer).
-    pub fn layer(&mut self, _layer: &[Neuron], _input_weights: &[Synapse], _intra_weights: &[Synapse]) -> Self {
+    pub fn layer(self, _layer: &[Neuron], _input_weights: &[Synapse], _intra_weights: &[Synapse]) -> Self {
         todo!("Perform size checks and add layer to dynamic NNBuilder")
     }
 }
@@ -92,7 +105,7 @@ impl NNBuilder<Zero> {
     /// 
     /// Note: diagonal intra-weights (i.e. from and to the same neuron) are ignored.
     pub fn layer<const N: usize>(
-        &mut self,
+        self,
         _layer: &[Neuron; N],
         _input_weights: &[Synapse; N],
         _intra_weights: &[[Synapse; N]; N]
@@ -107,7 +120,7 @@ impl<const LEN_LAST_LAYER: usize> NNBuilder<NotZero<LEN_LAST_LAYER>> {
     /// 
     /// Note: diagonal intra-weights (i.e. from and to the same neuron) are ignored.
     pub fn layer<const N: usize>(
-        &mut self,
+        self,
         _layer: &[Neuron; N],
         _input_weights: &[[Synapse; LEN_LAST_LAYER]; N],
         _intra_weights: &[[Synapse; N]; N]
