@@ -1,5 +1,4 @@
 use core::panic;
-use libm::exp;
 
 /*
 TODO: Implementare la possibilità di modificare 
@@ -80,7 +79,7 @@ impl NeuronConfig {
 /// 
 /// 
 ///
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct Neuron{
     v_mem_current: f64,
     v_mem_old: f64,
@@ -192,7 +191,7 @@ impl Neuron {
 
         //calcola il nuovo val
         self.v_mem_current = self.v_rest + (self.v_mem_old - self.v_rest) 
-                        *exp( delta_t / self.tau ) + weighted_spikes_val;
+                        *(delta_t / self.tau).exp() + weighted_spikes_val;
 
         //e lo carica nell'array
         self.parametres[0] = self.v_mem_current;
