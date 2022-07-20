@@ -79,7 +79,8 @@ impl NeuronConfig {
 /// ```
 /// 
 /// 
-/// 
+///
+#[derive(Clone, Copy)]
 pub struct Neuron{
     v_mem_current: f64,
     v_mem_old: f64,
