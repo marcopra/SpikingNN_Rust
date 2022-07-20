@@ -11,7 +11,7 @@
 
 use std::{marker::PhantomData, borrow::Borrow, fmt::Debug};
 use thiserror::Error;
-use crate::{NN, Synapse, Neuron, matrix::Matrix};
+use crate::{NN, matrix::Matrix, Model};
 pub trait Dim: Copy { }
 
 #[derive(Clone, Copy)]
@@ -29,12 +29,12 @@ impl Dim for Dynamic { }
 /// An error type for the dynamic variant of NNBuilder.
 /// All the error variants contain the builder that generated them, for reuse.
 #[derive(Error, Debug)]
-pub enum DynamicBuilderError {
+pub enum DynamicBuilderError<M: Model> {
     #[error("Empty builder can not be built")]
-    EmptyNN(NNBuilder<Dynamic>),
+    EmptyNN(NNBuilder<M, Dynamic>),
 
     #[error("Invalid input sizes provided for layer")]
-    InvalidSizes(NNBuilder<Dynamic>)
+    InvalidSizes(NNBuilder<M, Dynamic>)
 }
 
 /// Helper type that implements the builder pattern for `NN`.
@@ -71,14 +71,14 @@ pub enum DynamicBuilderError {
 ///     .build();
 /// ```
 #[derive(Clone)]
-pub struct NNBuilder<D: Dim> {
+pub struct NNBuilder<M: Model, D: Dim> {
     /// Inner, growing `NN`
-    nn: NN,
+    nn: NN<M>,
     /// Needed because of D, which would otherwise be unused
     _phantom: PhantomData<D>,
 }
 
-impl NNBuilder<Dynamic> {
+impl<M: Model> NNBuilder<M, Dynamic> {
     /// Create a new dynamically sized instance of `NNBuilder`.
     /// Every instance of this type can be used to build one `NN`.
     /// 
@@ -93,10 +93,10 @@ impl NNBuilder<Dynamic> {
     /// Note: input and intra weights are flattened row-major matrices (one row for each neuron in the layer).
     pub fn layer(
         mut self,
-        layer: impl Borrow<[Neuron]>,
-        input_weights: impl Borrow<[Synapse]>,
-        intra_weights: impl Borrow<[Synapse]>
-    ) -> Result<Self, DynamicBuilderError>
+        layer: impl Borrow<[M::Neuron]>,
+        input_weights: impl Borrow<[M::Synapse]>,
+        intra_weights: impl Borrow<[M::Synapse]>
+    ) -> Result<Self, DynamicBuilderError<M>>
     {
         let len_last_layer = self.nn.layers.last().map(|(l, _)| l.len()).unwrap_or(0);
         let n = layer.borrow().len();
@@ -130,7 +130,7 @@ impl NNBuilder<Dynamic> {
     }
 
     /// Build the `NN`
-    pub fn build(self) -> Result<NN, DynamicBuilderError> {
+    pub fn build(self) -> Result<NN<M>, DynamicBuilderError<M>> {
         if self.nn.layers.is_empty() {
             Err(DynamicBuilderError::EmptyNN(self))
         } else {
@@ -139,7 +139,7 @@ impl NNBuilder<Dynamic> {
     }
 }
 
-impl NNBuilder<Zero> {
+impl<M: Model> NNBuilder<M, Zero> {
     /// Create a new statically sized instance of `NNBuilder`.
     /// Every instance of this type can be used to build one `NN`.
     /// 
@@ -154,10 +154,10 @@ impl NNBuilder<Zero> {
     /// Note: diagonal intra-weights (i.e. from and to the same neuron) are ignored.
     pub fn layer<const N: usize>(
         mut self,
-        layer: impl Borrow<[Neuron; N]>,
-        input_weights: impl Borrow<[Synapse; N]>,
-        intra_weights: impl Borrow<[[Synapse; N]; N]>
-    ) -> NNBuilder<NotZero<N>>
+        layer: impl Borrow<[M::Neuron; N]>,
+        input_weights: impl Borrow<[M::Synapse; N]>,
+        intra_weights: impl Borrow<[[M::Synapse; N]; N]>
+    ) -> NNBuilder<M, NotZero<N>>
     {
         // Insert input weights
         self.nn.input_weights = input_weights.borrow().to_vec();
@@ -169,16 +169,16 @@ impl NNBuilder<Zero> {
     }
 }
 
-impl<const LEN_LAST_LAYER: usize> NNBuilder<NotZero<LEN_LAST_LAYER>> {
+impl<M: Model, const LEN_LAST_LAYER: usize> NNBuilder<M, NotZero<LEN_LAST_LAYER>> {
     /// Add a layer to the neural network.
     /// 
     /// Note: diagonal intra-weights (i.e. from and to the same neuron) are ignored.
     pub fn layer<const N: usize>(
         mut self,
-        layer: impl Borrow<[Neuron; N]>,
-        input_weights: impl Borrow<[[Synapse; LEN_LAST_LAYER]; N]>,
-        intra_weights: impl Borrow<[[Synapse; N]; N]>
-    ) -> NNBuilder<NotZero<N>>
+        layer: impl Borrow<[M::Neuron; N]>,
+        input_weights: impl Borrow<[[M::Synapse; LEN_LAST_LAYER]; N]>,
+        intra_weights: impl Borrow<[[M::Synapse; N]; N]>
+    ) -> NNBuilder<M, NotZero<N>>
     {
         // Insert layer
         self.nn.layers.push((layer.borrow().to_vec(), intra_weights.borrow().into()));
@@ -190,14 +190,14 @@ impl<const LEN_LAST_LAYER: usize> NNBuilder<NotZero<LEN_LAST_LAYER>> {
     }
 
     /// Build the `NN`
-    pub fn build(self) -> NN {
+    pub fn build(self) -> NN<M> {
         self.inner_build()
     }
 }
 
-impl<D: Dim> NNBuilder<D> {
+impl<M: Model, D: Dim> NNBuilder<M, D> {
     /// Create a new, empty `NN`
-    fn new_nn() -> NN {
+    fn new_nn() -> NN<M> {
         NN {
             input_weights: vec![],
             layers: vec![],
@@ -206,7 +206,7 @@ impl<D: Dim> NNBuilder<D> {
     }
 
     /// Morph into another diensionality variant
-    fn morph<E: Dim>(self) -> NNBuilder<E> {
+    fn morph<E: Dim>(self) -> NNBuilder<M, E> {
         NNBuilder { nn: self.nn, _phantom: PhantomData }
     }
 
@@ -214,18 +214,18 @@ impl<D: Dim> NNBuilder<D> {
     /// Note: we don't expose a global 'build' in order to:
     ///  - not allow building NNBuilder<Zero> variants
     ///  - allow checking dimensions at runtime for NNBuilder<Dynamic> variants
-    fn inner_build(self) -> NN {
+    fn inner_build(self) -> NN<M> {
         self.nn
     }
 }
 
-impl Default for NNBuilder<Zero> {
+impl<M: Model> Default for NNBuilder<M, Zero> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Debug for NNBuilder<Dynamic> {
+impl<M: Model> Debug for NNBuilder<M, Dynamic> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("NNBuilder").finish()
     }
