@@ -228,6 +228,8 @@ impl LifNeuronConfig {
 #[cfg(test)]
 mod tests {
     use crate::Neuron;
+    use rand_pcg::Pcg32;
+    use rand::{Rng, SeedableRng, rngs::StdRng};
 
     use super::{LifNeuron, LifNeuronConfig};
     
@@ -254,6 +256,56 @@ mod tests {
         neuron.set_new_params(&nc2);
     }
 
+    //This function inizialize the square `Matrix´ containing the weight of the intra-layer links
+    //The row index corresponds to the output link, while the column index corresponds to the input link
+    //The diagonal of the `Matrix´ is initialized to 0
+    fn initialize_intra_layer_weights(n: usize)-> Matrix<Synapse>{
+
+        //Using a fixed seed to generate random values
+        let mut rng = Pcg32::seed_from_u64(0);
+        let mut diag = 0;
+
+        //Generating Random weights...
+        let data = (0..n*n).map(|i| {
+            if i == diag{
+                diag += n + 1;
+                return 0.0
+
+            }
+            else{
+                return rng.gen::<Synapse>()
+            }
+        }).collect::<Vec<Synapse>>();
+
+        
+        return Matrix::from_raw_data(n, n, data);
+
+    }
+
+    //This function inizialize the square `Matrix´ containing the weight of the inter-layer links
+    //The row index corresponds to the output link, while the column index corresponds to the input link
+    //This is a triangular Matrix
+    fn initialize_inter_layer_weights(row: usize, col: usize)-> Matrix<Synapse>{
+
+        //Using a fixed seed to generate random values
+        let mut rng = Pcg32::seed_from_u64(0);
+        let mut diag = 0;
+
+
+
+        let data = (0..row*col).map(|_| 
+            
+            rng.gen::<Synapse>()
+    
+        ).collect::<Vec<Synapse>>();
+
+    
+        
+        return Matrix::from_raw_data(row, col, data);
+
+    }
+
+    
 
     // fn test_bozza(){
     //     let first_spike_input_n1: Vec<u16> = [Spike::new(12,1), Spike::new(34,3),Spike::new(123,2)].to_vec();
