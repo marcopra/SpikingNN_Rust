@@ -67,7 +67,7 @@ impl NeuronConfig {
 /// ------
 /// 
 /// A struct for a single Neuron of the SNN.
-/// Each Neuron has its own parametres such as _current membrane tension_, _threshold tension_ etc...
+/// Each Neuron has its own parameters such as _current membrane tension_, _threshold tension_ etc...
 /// 
 /// Usage Example
 /// --------------
@@ -96,10 +96,10 @@ impl Neuron {
 
     pub fn new(nc: &NeuronConfig ) -> Neuron {
 
-        //TODO parametri individuali ridondanti, già contenuti nel vettore parametre,
+        //TODO parametri individuali ridondanti, già contenuti nel vettore parameter,
         // usato per settare il neurone
         Neuron {
-            //parametres
+            //parameters
             v_mem_current:  nc.v_mem_current ,
             v_mem_old: 0.0,
             v_rest:  nc.v_rest,
@@ -212,8 +212,8 @@ impl Neuron {
 
     // CONFIGURATION CHANGE
 
-    /// Use an array of parametres (correctly order) to set the array 
-    /// of parametres of the neuron.
+    /// Use an array of parameters (correctly order) to set the array 
+    /// of parameters of the neuron.
     /// This let you create a new NeuronConfig, and use it to modify neurons already created
     /// maybe for training or something else...
     pub fn set_new_param(&mut self, nc: &NeuronConfig){
@@ -223,8 +223,8 @@ impl Neuron {
 
     //Da definire nell'implementazione del tratto
 
-    /// A function that maps each parametre in the array, into an explicit parametre, 
-    /// defined in the Neuron model. The number of parametres and the name associated 
+    /// A function that maps each parameter in the array, into an explicit parameter, 
+    /// defined in the Neuron model. The number of parameters and the name associated 
     /// to them is defined in the Trait Implementation of Model and Neuron.
     /// 
     /// This function reads cells of Neuron.parametres, and overwrite the old value 

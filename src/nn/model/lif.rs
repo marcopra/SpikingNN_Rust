@@ -5,7 +5,7 @@ use crate::{Model, nn::Spike};
 /// ------
 /// 
 /// A struct for a single Neuron of the SNN.
-/// Each Neuron has its own parametres such as _current membrane tension_, _threshold tension_ etc...
+/// Each Neuron has its own parameters such as _current membrane tension_, _threshold tension_ etc...
 /// 
 /// Usage Example
 /// --------------
@@ -61,7 +61,7 @@ impl From<LifNeuronConfig> for LifNeuron {
     fn from( lif_nc: LifNeuronConfig) -> Self {
         
         LifNeuron {
-            //parametres
+            //parameters
             v_mem_current: lif_nc.v_mem_current ,
             v_mem_old: 0.0,
             v_rest:  lif_nc.v_rest,
@@ -94,7 +94,7 @@ impl super::Neuron for LifNeuron {
     /// **weighted_spike_val[[1]]**.
     /// 
     /// Instead **time_of_spike** represents the actual instant when the spike occurs/takes place.
-    /// 
+    ///
     /// Finally **out_spike_train[[1]]** is a cell of an array which contains each spike generated 
     /// from neurons of this same layer.
     /// ```
@@ -107,8 +107,8 @@ impl super::Neuron for LifNeuron {
     ///     neuron_one.update_v_mem(time_of_spike, weighted_spike_val[1], &mut out_spike_train[1])
     /// ```
     /// After this code, the neuron may possibly have fired the spike.
-    ///
-    /// 
+    
+    //TODO Cambiare da Option<Spike> a 1 o 0 per uso interno per andare a creare il vettore di output da moltiplicare con la matrice
     fn handle_spike<M>(&mut self, weighted_input_val: f64, nn: &crate::NN<M>) -> Option<crate::nn::Spike>
     where M: crate::Model<Neuron = Self>
     {
@@ -120,7 +120,9 @@ impl super::Neuron for LifNeuron {
 
         if self.v_mem_current > self.v_threshold{                       //TODO 
             self.v_mem_current = self.v_reset;
-            return Some( Spike::new()); 
+
+            //TODO change return...
+            return Some( Spike::new(0, 1)); 
         }
         None
     }
@@ -132,7 +134,6 @@ impl super::Neuron for LifNeuron {
         self.v_threshold =  nc.v_threshold;
         self.tau = nc.tau;
     }
-
   
 }
 
@@ -151,7 +152,7 @@ impl LifNeuron {
     pub fn new(nc: &LifNeuronConfig ) -> LifNeuron {
 
         LifNeuron {
-            //parametres
+            //parameters
             v_mem_current:  nc.v_mem_current ,
             v_mem_old: 0.0,
             v_rest:  nc.v_rest,
@@ -182,7 +183,7 @@ impl LifNeuron {
         // and it will be used for all neuron you asked
         if ncs.len() == 1{  
             let nc = &ncs[0];
-            for i in 0..dim {
+            for _i in 0..dim {
                 res.push(LifNeuron::new(nc));
             }
         }
@@ -213,20 +214,12 @@ impl LifNeuronConfig {
         v_threshold: f64,
         tau: f64,) -> LifNeuronConfig{
 
-        //load params into the vec
-        let mut params: Vec<f64> = Vec::new();
-        params.push(v_mem_current);
-        params.push(v_rest);
-        params.push(v_reset);
-        params.push(v_threshold);
-        params.push(tau);
-
         LifNeuronConfig{
-            v_mem_current: v_mem_current,
-            v_rest: v_rest,
-            v_reset: v_reset,
-            v_threshold: v_threshold,
-            tau: tau
+            v_mem_current,
+            v_rest,
+            v_reset,
+            v_threshold,
+            tau
         }
     }
     
@@ -262,4 +255,11 @@ mod tests {
     }
 
 
+    // fn test_bozza(){
+    //     let first_spike_input_n1: Vec<u16> = [Spike::new(12,1), Spike::new(34,3),Spike::new(123,2)].to_vec();
+    //     let first_spike_input_n2: Vec<u8> = [0, 0, 0, 1, 0, 0, 0, 1, 0].to_vec();
+
+    // }
+
 }
+

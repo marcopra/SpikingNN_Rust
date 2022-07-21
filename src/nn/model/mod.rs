@@ -6,7 +6,7 @@ use super::{Spike, neuron::NeuronConfig};
 /// An applicable model for spiking neural networks
 pub trait Model {
     /// A struct for a single Neuron of the SNN.
-    /// Each Neuron has its own parametres such as _current membrane tension_, _threshold tension_ etc...
+    /// Each Neuron has its own parameters such as _current membrane tension_, _threshold tension_ etc...
     type Neuron: Neuron;
 
     /// A link between two `Neuron`s.
