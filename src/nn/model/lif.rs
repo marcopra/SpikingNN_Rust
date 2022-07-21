@@ -255,7 +255,8 @@ mod tests {
 
         neuron.set_new_params(&nc2);
     }
-
+}
+/* 
     //This function inizialize the square `Matrix´ containing the weight of the intra-layer links
     //The row index corresponds to the output link, while the column index corresponds to the input link
     //The diagonal of the `Matrix´ is initialized to 0
@@ -314,4 +315,4 @@ mod tests {
     // }
 
 }
-
+*/
