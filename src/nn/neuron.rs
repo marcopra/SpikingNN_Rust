@@ -202,27 +202,6 @@ impl Neuron {
         }
     }
 
-    /*BOZZA update_v_mem con tratti
-    
-    pub fn update_v_mem(&mut self, t_curr_spike: u128, weighted_spikes_val: f64, out_spike: &mut f64){
-
-        //TODO Implementare passaggio generico di una funzione, potenzialmente diversa dalla LIF
-        // per renderla configurabile a piacere...
-
-        let delta_t: f64 = (self.ts_old - self.ts_curr) as f64;
-
-        //calcola il nuovo val
-        self.v_mem_current = self.compute_v_mem(par1, par2, ...);
-
-        //e lo carica nell'array
-        self.parametres[0] = self.v_mem_current;
-
-        if self.v_mem_current > self.v_threshold{
-            Neuron::fire_impulse(out_spike);
-            self.v_mem_current = self.v_reset;
-        }
-    }
-     */
 
     //Readability...
     pub fn fire_impulse(out_spike: &mut f64){
