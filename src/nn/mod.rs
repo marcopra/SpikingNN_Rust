@@ -14,6 +14,12 @@ pub struct Spike {
     // TODO
 }
 
+impl Spike {
+    pub fn new() -> Spike{
+        Spike {  }
+    }
+}
+
 /// The Neural Network itself.
 /// 
 /// This organizes `Neuron`s into consecutive layers, each constituted of some amount of `Neuron`s.
