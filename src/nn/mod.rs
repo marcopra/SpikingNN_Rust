@@ -7,6 +7,7 @@ use std::fmt;
 
 pub mod model;
 pub(crate) mod builder;
+pub(crate) mod solver_v1;
 
 /// Represents the 'spike' that stimulates a neuron in a spiking neural network.
 ///  
@@ -150,6 +151,7 @@ mod tests {
 
     #[test]
     fn test_create_terminal_vec(){
+
         let spikes_neuron_1 = [11, 9, 23, 43, 42].to_vec();
         let spike_vec_for_neuron_1 = Spike::spike_vec_for(1, spikes_neuron_1 );
         
