@@ -1,6 +1,6 @@
-use crate::Model;
+use ndarray::Array2;
 
-use crate::matrix::Matrix;
+use crate::Model;
 
 use self::model::Layer;
 use std::fmt;
@@ -113,11 +113,8 @@ pub struct NN<M: Model> {
     /// a square `Matrix` for the intra-layer weights.
     layers: Vec<Layer<M>>,
     /// Vec of `Synapse` meshes between each consecutive pair of layers
-    synapses: Vec<Matrix<M::Synapse>>
+    synapses: Vec<Array2<M::Synapse>>
 }
-
-
-
 
 #[cfg(test)]
 mod tests {
