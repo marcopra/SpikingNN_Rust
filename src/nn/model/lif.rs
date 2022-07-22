@@ -57,23 +57,11 @@ pub struct LifNeuronConfig {
     tau: f64
 }
 
-impl From<LifNeuronConfig> for LifNeuron {
-    fn from( lif_nc: LifNeuronConfig) -> Self {
-        
-        LifNeuron {
-            //parameters
-            v_mem_current: lif_nc.v_mem_current ,
-            v_mem_old: 0.0,
-            v_rest:  lif_nc.v_rest,
-            v_reset:  lif_nc.v_reset ,
-            v_threshold:  lif_nc.v_threshold ,
-            tau:  lif_nc.tau,
-            ts_old: 0,
-            ts_curr: 0
-        }
+impl From<&LifNeuronConfig> for LifNeuron {
+    fn from(lif_nc: &LifNeuronConfig) -> Self {
+        Self::new(lif_nc)
     }
 }
-
 
 impl super::Neuron for LifNeuron {
     type Config = LifNeuronConfig;
@@ -194,17 +182,14 @@ impl LifNeuron {
                 panic!("--> X  Error: Number of configuration and number of Neurons differ!")
             }
 
-            for i in 0..dim {
-                res.push(LifNeuron::new(&ncs[i]));
-            }
+            res = ncs.iter().map(|cfg| cfg.into()).collect();
         }
 
-        return res
+        res
         
     }
 
 }
-
 
 impl LifNeuronConfig {
     pub fn new(
@@ -250,8 +235,7 @@ mod tests {
             0.8, 
             0.7);
 
-            //TODO provare a mettere la from(&nc) 
-        let ne = LifNeuron::from(nc.clone());
+        let ne = LifNeuron::from(&nc);
         let mut neuron = LifNeuron::new(&nc);
 
         neuron.set_new_params(&nc2);

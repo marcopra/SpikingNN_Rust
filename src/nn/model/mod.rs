@@ -1,6 +1,8 @@
 pub mod lif;
 
-use crate::{NN, matrix::Matrix};
+use ndarray::Array2;
+use crate::NN;
+
 use super::{Spike};
 
 /// An applicable model for spiking neural networks
@@ -17,7 +19,7 @@ pub trait Model {
 
 pub trait Neuron: Sized + Clone {
     /// Helper type to build neurons
-    type Config: Into<Self>;
+    type Config: RefInto<Self>;
 
     /// Handle the incoming spike
     fn handle_spike<M>(&mut self, weighted_input_val: f64, nn: &NN<M>) -> Option<Spike>
@@ -26,4 +28,7 @@ pub trait Neuron: Sized + Clone {
     fn set_new_params(&mut self, nc: &Self::Config);
 }
 
-pub(super) type Layer<M> = (Vec<<M as Model>::Neuron>, Matrix<<M as Model>::Synapse>);
+pub trait RefInto<T> { }
+impl<T, U> RefInto<T> for U where for<'a> &'a U: Into<T> { }
+
+pub(super) type Layer<M> = (Vec<<M as Model>::Neuron>, Array2<<M as Model>::Synapse>);
