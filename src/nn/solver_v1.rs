@@ -1,6 +1,7 @@
-use crate::nn::{Spike, NN};
-//use ndarray::
+use std::iter::Enumerate;
 
+use crate::nn::{Spike, NN};
+use ndarray::Array2;
 
 
 /// A struct used to manage the input spikes given to a specified NN, 
@@ -55,10 +56,34 @@ impl<M: crate::nn::Model> Solver<M> {
 
     fn apply_spike_to_input_layer_neuron(vec_neuron_id: Vec<usize>, ts: u128, network: &mut NN<M>) {
 
+        //[2 ]
         let n_neurons_layer0 = network.layers[0].0.len();
+        let mut input_vec = Vec::with_capacity(n_neurons_layer0);
+        let mut index = 0;
 
-        //[2 5]
+        //costruisce il vettore di spike per il primo layer di input al tempot t_current
+        for i in 0..input_vec.len() {
+        
+            if vec_neuron_id.contains(&i){
+                input_vec[i] = 1 as f64;
+            }
+            else{
+                input_vec[i] = 0 as f64;
+            }
+        }
 
+        //[0 1 0 0 1] vettore di input da moltiplicare con la matrice (diagonale in questo caso) dei pesi
+        let input = Array2::from_shape_vec(
+                                            (1, n_neurons_layer0),
+                                            input_vec)
+                                            .unwrap();
+        //Matrice dei pesi
+        let weigth_matrix = Array2::from_shape_vec(
+                                                    (1, n_neurons_layer0),
+                                                    network.input_weights.clone())
+                                                    .unwrap()
+                                                    .diag();
+        //TODO let weighted_input_val = input.dot(&weigth_matrix);
         //[0 1 0 0 1] x diag(w1, w2, w3, k4, k5) = weighted_input_val
         //vado a prendere il neurone neuron_id-esimo
         for &neuron_id in vec_neuron_id.iter(){
