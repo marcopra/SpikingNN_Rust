@@ -250,6 +250,7 @@ mod tests {
             0.8, 
             0.7);
 
+            //TODO provare a mettere la from(&nc) 
         let ne = LifNeuron::from(nc.clone());
         let mut neuron = LifNeuron::new(&nc);
 

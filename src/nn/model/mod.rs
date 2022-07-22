@@ -1,7 +1,7 @@
 pub mod lif;
 
 use crate::{NN, matrix::Matrix};
-use super::{Spike, neuron::NeuronConfig};
+use super::{Spike};
 
 /// An applicable model for spiking neural networks
 pub trait Model {

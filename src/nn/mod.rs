@@ -7,7 +7,6 @@ use std::fmt;
 
 pub mod model;
 pub(crate) mod builder;
-pub(crate) mod neuron;
 
 /// Represents the 'spike' that stimulates a neuron in a spiking neural network.
 ///  
@@ -38,17 +37,13 @@ impl Spike {
     /// # Example of Usage
     /// 
     /// ```
-    ///  let my_vec = [11, 9, 23, 43, 42].to_vec();
-    ///  let spike_vec_for_neuron_2 = Spike::spike_vec_for(neuron_id: 2, ts_vec: my_vec );
-    /// 
+    ///  let spikes_neuron_2 = [11, 9, 23, 43, 42].to_vec();
+    ///  let spike_vec_for_neuron_2 = Spike::spike_vec_for(neuron_id: 2, ts_vec: spikes_neuron_2 );
     /// 
     /// ```
-    /// 
     pub fn spike_vec_for(neuron_id: usize, ts_vec: Vec<u128>) -> Vec<Spike> {
 
         let mut spike_vec : Vec<Spike> = Vec::with_capacity(ts_vec.len());
-        
-        
         
         //Creating the Spikes array for a single Neuron
         for ts in ts_vec.into_iter() {
@@ -58,15 +53,31 @@ impl Spike {
         //Order the ts vector
         spike_vec.sort();
 
-        return spike_vec;
+        spike_vec
     }
+
 
     /// Create an ordered array starting from all the spikes sent to the NN.
     /// It takes a Matrix where each row i-th represents an array of spike for neuron i-th
     /// then a single Vec is created. Eventually the array is sorted
     /// 
     /// # Example
+    /// ```
+    ///  use crate::nn::Spike;
     /// 
+    ///  let spikes_neuron_1 = [11, 9, 23, 43, 42].to_vec();
+    ///  let spike_vec_for_neuron_1 = Spike::spike_vec_for(2, spikes_neuron_1 );
+    ///  
+    ///  let spikes_neuron_2 = [1, 29, 3, 11, 22].to_vec();
+    ///  let spike_vec_for_neuron_2 = Spike::spike_vec_for(2, spikes_neuron_2 );
+    ///  
+    ///  let mut spikes: Vec<Vec<Spike>> = Vec::new();
+    ///  spikes.push(spike_vec_for_neuron_1);
+    ///  spikes.push(spike_vec_for_neuron_2);
+    ///  
+    ///  let sorted_spike_array_for_nn: Vec<Spike> = Spike::create_terminal_vec(spikes)
+    /// 
+    /// ```
     pub fn create_terminal_vec(spikes: Vec<Vec<Spike>>) -> Vec<Spike> {
         let mut res: Vec<Spike> = Vec::new();
 
@@ -76,7 +87,7 @@ impl Spike {
             }
         }
         res.sort(); //ascending
-        //res.sort_by(|a, b| a.ts.partial_cmp(&b.ts));
+        //TODO cancellare? res.sort_by(|a, b| a.ts.partial_cmp(&b.ts));
     
         res
     }
@@ -112,8 +123,6 @@ pub struct NN<M: Model> {
 mod tests {
     use crate::nn::Spike;
     
-
-    
     #[test]
     fn test_spike_vec_for(){
         
@@ -137,9 +146,21 @@ mod tests {
         for el in input_vec.iter(){
             println!("{:?}", el);
         }
+    }
 
+    #[test]
+    fn test_create_terminal_vec(){
+        let spikes_neuron_1 = [11, 9, 23, 43, 42].to_vec();
+        let spike_vec_for_neuron_1 = Spike::spike_vec_for(1, spikes_neuron_1 );
         
+        let spikes_neuron_2 = [1, 29, 3, 11, 22].to_vec();
+        let spike_vec_for_neuron_2 = Spike::spike_vec_for(2, spikes_neuron_2 );
         
+        let spikes: Vec<Vec<Spike>> = [spike_vec_for_neuron_1, 
+                                           spike_vec_for_neuron_2].to_vec();
+        
+        let sorted_spike_array_for_nn: Vec<Spike> = Spike::create_terminal_vec(spikes);
+        println!("{:?}", sorted_spike_array_for_nn);
     }
 
 }
