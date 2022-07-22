@@ -10,8 +10,9 @@
 // TODO: intra-weights square matrix? Should we request a Nx(N-1) matrix to dismiss the useless self weight?
 
 use std::{marker::PhantomData, borrow::Borrow, fmt::Debug};
+use ndarray::Array2;
 use thiserror::Error;
-use crate::{NN, matrix::Matrix, Model};
+use crate::{NN, Model};
 pub trait Dim: Copy { }
 
 #[derive(Clone, Copy)]
@@ -118,12 +119,12 @@ impl<M: Model> NNBuilder<M, Dynamic> {
         }
 
         // Finally, insert layer into nn
-        self.nn.layers.push((layer.borrow().to_vec(), Matrix::from_raw_data(n, n, intra_weights.borrow().to_vec())));
+        self.nn.layers.push((layer.borrow().to_vec(), Array2::from_shape_vec((n, n), intra_weights.borrow().to_vec()).unwrap()));
 
         if len_last_layer == 0 {
             self.nn.input_weights = input_weights.borrow().to_vec();
         } else {
-            self.nn.synapses.push(Matrix::from_raw_data(len_last_layer, n, input_weights.borrow().to_vec()));
+            self.nn.synapses.push(Array2::from_shape_vec((len_last_layer, n), input_weights.borrow().to_vec()).unwrap());
         }
         
         Ok(self)
@@ -163,7 +164,7 @@ impl<M: Model> NNBuilder<M, Zero> {
         self.nn.input_weights = input_weights.borrow().to_vec();
 
         // Insert layer
-        self.nn.layers.push((layer.borrow().to_vec(), intra_weights.borrow().into()));
+        self.nn.layers.push((layer.borrow().to_vec(), Array2::from_shape_vec((N, N), intra_weights.borrow().iter().flatten().cloned().collect()).unwrap()));
         
         self.morph()
     }
@@ -181,10 +182,10 @@ impl<M: Model, const LEN_LAST_LAYER: usize> NNBuilder<M, NotZero<LEN_LAST_LAYER>
     ) -> NNBuilder<M, NotZero<N>>
     {
         // Insert layer
-        self.nn.layers.push((layer.borrow().to_vec(), intra_weights.borrow().into()));
+        self.nn.layers.push((layer.borrow().to_vec(), Array2::from_shape_vec((N, N), intra_weights.borrow().iter().flatten().cloned().collect()).unwrap()));
 
         // Insert input synapse mesh
-        self.nn.synapses.push(input_weights.borrow().into());
+        self.nn.synapses.push(Array2::from_shape_vec((LEN_LAST_LAYER, N), input_weights.borrow().iter().flatten().cloned().collect()).unwrap());
 
         self.morph()
     }

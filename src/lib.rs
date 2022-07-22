@@ -1,5 +1,4 @@
 mod nn;
-mod matrix;
 
 // Re-exports
 pub use nn::NN;
