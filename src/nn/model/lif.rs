@@ -18,12 +18,16 @@ use crate::{Model, nn::Spike};
 /// 
 ///
 pub struct LifNeuron{
-    v_mem_current: f64,
-    v_mem_old: f64,
+    
+    //Params
     v_rest: f64,
     v_reset: f64,
     v_threshold: f64,
     tau: f64,
+
+    //Vars
+    v_mem_current: f64,
+    v_mem_old: f64,
     ts_old: u128,  
     ts_curr: u128
 }
@@ -50,7 +54,6 @@ pub struct LifNeuron{
 /// ```
 /// 
 pub struct LifNeuronConfig {
-    v_mem_current: f64,
     v_rest: f64,
     v_reset: f64,
     v_threshold: f64,
@@ -70,7 +73,7 @@ impl Model for LeakyIntegrateFire {
     type Neuron = LifNeuron;
     type Config = LifNeuronConfig;
 
-    const SPIKE_WEIGHT: f64 = 1.0;
+    const SPIKE_WEIGHT: f64 = 1.0; //TODO vedere se tenerla
 
     /// Update the value of current membrane tension, reading any new spike.
     /// When the neuron receives one or more impulses, it compute the new tension of the membrane,
@@ -124,7 +127,7 @@ impl Model for LeakyIntegrateFire {
     }
 
     fn set_new_params(neuron: &mut LifNeuron, nc: &Self::Config) {
-        neuron.v_mem_current = nc.v_mem_current;
+        neuron.v_mem_current = nc.v_rest;
         neuron.v_rest = nc.v_rest;
         neuron.v_reset = nc.v_reset;
         neuron.v_threshold =  nc.v_threshold;
@@ -140,7 +143,7 @@ impl LifNeuron {
 
         LifNeuron {
             //parameters
-            v_mem_current:  nc.v_mem_current ,
+            v_mem_current:   nc.v_rest,
             v_mem_old: 0.0,
             v_rest:  nc.v_rest,
             v_reset:  nc.v_reset ,
@@ -199,7 +202,6 @@ impl LifNeuronConfig {
         tau: f64,) -> LifNeuronConfig{
 
         LifNeuronConfig{
-            v_mem_current,
             v_rest,
             v_reset,
             v_threshold,
