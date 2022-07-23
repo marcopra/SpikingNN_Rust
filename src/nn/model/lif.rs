@@ -63,8 +63,14 @@ impl From<&LifNeuronConfig> for LifNeuron {
     }
 }
 
-impl super::Neuron for LifNeuron {
+#[derive(Clone, Copy, Debug)]
+pub struct LeakyIntegrateFire;
+
+impl Model for LeakyIntegrateFire {
+    type Neuron = LifNeuron;
     type Config = LifNeuronConfig;
+
+    const SPIKE_WEIGHT: f64 = 1.0;
 
     /// Update the value of current membrane tension, reading any new spike.
     /// When the neuron receives one or more impulses, it compute the new tension of the membrane,
@@ -97,40 +103,31 @@ impl super::Neuron for LifNeuron {
     /// After this code, the neuron may possibly have fired the spike.
     
     //TODO Cambiare da Option<Spike> a 1 o 0 per uso interno per andare a creare il vettore di output da moltiplicare con la matrice
-    fn handle_spike<M>(&mut self, weighted_input_val: f64, nn: &crate::NN<M>) -> Option<crate::nn::Spike>
-    where M: crate::Model<Neuron = Self>
+    fn handle_spike(neuron: &mut LifNeuron, weighted_input_val: f64) -> bool
     {
-         let delta_t: f64 = (self.ts_old - self.ts_curr) as f64;
+         let delta_t: f64 = (neuron.ts_old - neuron.ts_curr) as f64;
 
         //calcola il nuovo val
-        self.v_mem_current = self.v_rest + (self.v_mem_old - self.v_rest) 
-                        *(delta_t / self.tau).exp() + weighted_input_val;
+        neuron.v_mem_current = neuron.v_rest + (neuron.v_mem_old - neuron.v_rest) 
+                        *(delta_t / neuron.tau).exp() + weighted_input_val;
 
-        if self.v_mem_current > self.v_threshold{                       //TODO 
-            self.v_mem_current = self.v_reset;
+        if neuron.v_mem_current > neuron.v_threshold{                       //TODO 
+            neuron.v_mem_current = neuron.v_reset;
 
             //TODO change return...
-            return Some( Spike::new(0, 1)); 
+            return true; 
         }
-        None
+        
+        false
     }
 
-    fn set_new_params(&mut self, nc: &Self::Config) {
-        self.v_mem_current = nc.v_mem_current;
-        self.v_rest = nc.v_rest;
-        self.v_reset = nc.v_reset;
-        self.v_threshold =  nc.v_threshold;
-        self.tau = nc.tau;
+    fn set_new_params(neuron: &mut LifNeuron, nc: &Self::Config) {
+        neuron.v_mem_current = nc.v_mem_current;
+        neuron.v_rest = nc.v_rest;
+        neuron.v_reset = nc.v_reset;
+        neuron.v_threshold =  nc.v_threshold;
+        neuron.tau = nc.tau;
     }
-  
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct LeakyIntegrateFire;
-
-impl Model for LeakyIntegrateFire {
-    type Neuron = LifNeuron;
-    type Synapse = f64;
 }
 
 
@@ -212,11 +209,10 @@ impl LifNeuronConfig {
 
 #[cfg(test)]
 mod tests {
-    use crate::Neuron;
     use rand_pcg::Pcg32;
     use rand::{Rng, SeedableRng, rngs::StdRng};
 
-    use super::{LifNeuron, LifNeuronConfig};
+    use super::{LifNeuron, LifNeuronConfig, LeakyIntegrateFire, super::Model};
     
     #[test]
     fn test_config_neurons() {
@@ -238,7 +234,7 @@ mod tests {
         let ne = LifNeuron::from(&nc);
         let mut neuron = LifNeuron::new(&nc);
 
-        neuron.set_new_params(&nc2);
+        LeakyIntegrateFire::set_new_params(&mut neuron, &nc2);
     }
 }
 /* 

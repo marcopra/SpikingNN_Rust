@@ -95,8 +95,8 @@ impl<M: Model> NNBuilder<M, Dynamic> {
     pub fn layer(
         mut self,
         layer: impl Borrow<[M::Neuron]>,
-        input_weights: impl Borrow<[M::Synapse]>,
-        intra_weights: impl Borrow<[M::Synapse]>
+        input_weights: impl Borrow<[f64]>,
+        intra_weights: impl Borrow<[f64]>
     ) -> Result<Self, DynamicBuilderError<M>>
     {
         let len_last_layer = self.nn.layers.last().map(|(l, _)| l.len()).unwrap_or(0);
@@ -156,8 +156,8 @@ impl<M: Model> NNBuilder<M, Zero> {
     pub fn layer<const N: usize>(
         mut self,
         layer: impl Borrow<[M::Neuron; N]>,
-        input_weights: impl Borrow<[M::Synapse; N]>,
-        intra_weights: impl Borrow<[[M::Synapse; N]; N]>
+        input_weights: impl Borrow<[f64; N]>,
+        intra_weights: impl Borrow<[[f64; N]; N]>
     ) -> NNBuilder<M, NotZero<N>>
     {
         // Insert input weights
@@ -177,8 +177,8 @@ impl<M: Model, const LEN_LAST_LAYER: usize> NNBuilder<M, NotZero<LEN_LAST_LAYER>
     pub fn layer<const N: usize>(
         mut self,
         layer: impl Borrow<[M::Neuron; N]>,
-        input_weights: impl Borrow<[[M::Synapse; LEN_LAST_LAYER]; N]>,
-        intra_weights: impl Borrow<[[M::Synapse; N]; N]>
+        input_weights: impl Borrow<[[f64; LEN_LAST_LAYER]; N]>,
+        intra_weights: impl Borrow<[[f64; N]; N]>
     ) -> NNBuilder<M, NotZero<N>>
     {
         // Insert layer
