@@ -1,6 +1,5 @@
-use crate::{Model, nn::Spike};
+use crate::Model;
 
-#[derive(Clone, Debug)]
 /// LifNeuron
 /// ------
 /// 
@@ -17,24 +16,20 @@ use crate::{Model, nn::Spike};
 /// 
 /// 
 ///
-pub struct LifNeuron{
-    
-    //Params
+#[derive(Clone, Debug)]
+pub struct LifNeuron {
     v_rest: f64,
     v_reset: f64,
     v_threshold: f64,
     tau: f64,
-
-    //Vars
-    v_mem_current: f64,
-    v_mem_old: f64,
-    ts_old: u128,  
-    ts_curr: u128
 }
 
-
-
 #[derive(Clone, Debug)]
+struct LifSolverVars {
+    v_mem: f64,
+    ts_old: u128,  
+}
+
 /// LifNeuronConfig
 /// ------------
 /// 
@@ -52,7 +47,8 @@ pub struct LifNeuron{
 ///     ...
 /// let neuron_four = LifNeuron::new(config_two);
 /// ```
-/// 
+///
+#[derive(Clone, Debug)]
 pub struct LifNeuronConfig {
     v_rest: f64,
     v_reset: f64,
@@ -71,6 +67,7 @@ pub struct LeakyIntegrateFire;
 
 impl Model for LeakyIntegrateFire {
     type Neuron = LifNeuron;
+    type SolverVars = LifSolverVars;
     type Config = LifNeuronConfig;
 
     const SPIKE_WEIGHT: f64 = 1.0; //TODO vedere se tenerla
@@ -106,28 +103,26 @@ impl Model for LeakyIntegrateFire {
     /// After this code, the neuron may possibly have fired the spike.
     
     //TODO Cambiare da Option<Spike> a 1 o 0 per uso interno per andare a creare il vettore di output da moltiplicare con la matrice
-    fn handle_spike(neuron: &mut LifNeuron, weighted_input_val: f64) -> f64
+    fn handle_spike(neuron: &LifNeuron, vars: &mut LifSolverVars, weighted_input_val: f64, ts: u128) -> f64
     {
-         let delta_t: f64 = (neuron.ts_old - neuron.ts_curr) as f64;
+        let delta_t: f64 = (ts - vars.ts_old) as f64;
+        vars.ts_old = ts;
 
         //calcola il nuovo val
-        neuron.v_mem_current = neuron.v_rest + (neuron.v_mem_old - neuron.v_rest) 
-                        *(delta_t / neuron.tau).exp() + weighted_input_val;
+        vars.v_mem = neuron.v_rest + (vars.v_mem - neuron.v_rest) * (-delta_t / neuron.tau).exp() + weighted_input_val;
 
-        if neuron.v_mem_current > neuron.v_threshold{                       //TODO 
-            neuron.v_mem_current = neuron.v_reset;
+        if vars.v_mem > neuron.v_threshold {                       //TODO 
+            vars.v_mem = neuron.v_reset;
 
             //TODO change return...
             //Fire Spike
-            return 1.; 
+            1. 
+        } else {
+            0.
         }
-        
-        //No spike
-        0.
     }
 
     fn set_new_params(neuron: &mut LifNeuron, nc: &Self::Config) {
-        neuron.v_mem_current = nc.v_rest;
         neuron.v_rest = nc.v_rest;
         neuron.v_reset = nc.v_reset;
         neuron.v_threshold =  nc.v_threshold;
@@ -140,19 +135,12 @@ impl Model for LeakyIntegrateFire {
 
 impl LifNeuron {
     pub fn new(nc: &LifNeuronConfig ) -> LifNeuron {
-
         LifNeuron {
-            //parameters
-            v_mem_current:   nc.v_rest,
-            v_mem_old: 0.0,
+            // parameters
             v_rest:  nc.v_rest,
             v_reset:  nc.v_reset ,
             v_threshold:  nc.v_threshold ,
             tau:  nc.tau,
-
-            //other indipendent from the LifNeuron
-            ts_old: 0,
-            ts_curr: 0
         }
     }
 
@@ -213,9 +201,6 @@ impl LifNeuronConfig {
 
 #[cfg(test)]
 mod tests {
-    use rand_pcg::Pcg32;
-    use rand::{Rng, SeedableRng, rngs::StdRng};
-
     use super::{LifNeuron, LifNeuronConfig, LeakyIntegrateFire, super::Model};
     
     #[test]
