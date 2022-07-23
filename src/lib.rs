@@ -1,4 +1,5 @@
 mod nn;
+mod sync;
 
 // Re-exports
 pub use nn::NN;
