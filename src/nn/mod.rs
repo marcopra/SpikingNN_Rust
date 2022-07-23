@@ -109,12 +109,12 @@ impl fmt::Display for Spike {
 #[derive(Clone)]
 pub struct NN<M: Model> {
     /// Input weight for each of the `Neuron`s in the entry layer
-    input_weights: Vec<M::Synapse>,
+    input_weights: Vec<f64>,
     /// All the layers of the neural network. Every layer contains the list of its `Neuron`s and
     /// a square `Matrix` for the intra-layer weights.
     layers: Vec<Layer<M>>,
     /// Vec of `Synapse` meshes between each consecutive pair of layers
-    synapses: Vec<Array2<M::Synapse>>
+    synapses: Vec<Array2<f64>>
 }
 
 #[cfg(test)]
