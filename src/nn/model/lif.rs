@@ -130,7 +130,7 @@ pub struct LeakyIntegrateFire;
 
 impl Model for LeakyIntegrateFire {
     type Neuron = LifNeuron;
-    type Synapse = f64;
+    type Synapse = f32;
 }
 
 
