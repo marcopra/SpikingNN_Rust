@@ -231,3 +231,23 @@ impl<M: Model> Debug for NNBuilder<M, Dynamic> {
         f.debug_struct("NNBuilder").finish()
     }
 }
+
+//TODO 
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn test_buildin_new_NN() {
+
+    }
+
+    #[test]
+    fn test_access_layers(){
+
+    }
+
+    #[test]
+    fn test_access_single_neuron(){
+        
+    }
+} 
