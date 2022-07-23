@@ -241,51 +241,51 @@ mod tests {
     //This function inizialize the square `Matrix´ containing the weight of the intra-layer links
     //The row index corresponds to the output link, while the column index corresponds to the input link
     //The diagonal of the `Matrix´ is initialized to 0
-    fn initialize_intra_layer_weights(n: usize)-> Matrix<Synapse>{
+    // fn initialize_intra_layer_weights(n: usize)-> Matrix<Synapse>{
 
-        //Using a fixed seed to generate random values
-        let mut rng = Pcg32::seed_from_u64(0);
-        let mut diag = 0;
+    //     //Using a fixed seed to generate random values
+    //     let mut rng = Pcg32::seed_from_u64(0);
+    //     let mut diag = 0;
 
-        //Generating Random weights...
-        let data = (0..n*n).map(|i| {
-            if i == diag{
-                diag += n + 1;
-                return 0.0
+    //     //Generating Random weights...
+    //     let data = (0..n*n).map(|i| {
+    //         if i == diag{
+    //             diag += n + 1;
+    //             return 0.0
 
-            }
-            else{
-                return rng.gen::<Synapse>()
-            }
-        }).collect::<Vec<Synapse>>();
+    //         }
+    //         else{
+    //             return rng.gen::<Synapse>()
+    //         }
+    //     }).collect::<Vec<Synapse>>();
 
         
-        return Matrix::from_raw_data(n, n, data);
+    //     return Matrix::from_raw_data(n, n, data);
 
-    }
+    // }
 
-    //This function inizialize the square `Matrix´ containing the weight of the inter-layer links
-    //The row index corresponds to the output link, while the column index corresponds to the input link
-    //This is a triangular Matrix
-    fn initialize_inter_layer_weights(row: usize, col: usize)-> Matrix<Synapse>{
+    // //This function inizialize the square `Matrix´ containing the weight of the inter-layer links
+    // //The row index corresponds to the output link, while the column index corresponds to the input link
+    // //This is a triangular Matrix
+    // fn initialize_inter_layer_weights(row: usize, col: usize)-> Matrix<Synapse>{
 
-        //Using a fixed seed to generate random values
-        let mut rng = Pcg32::seed_from_u64(0);
-        let mut diag = 0;
+    //     //Using a fixed seed to generate random values
+    //     let mut rng = Pcg32::seed_from_u64(0);
+    //     let mut diag = 0;
 
 
 
-        let data = (0..row*col).map(|_| 
+    //     let data = (0..row*col).map(|_| 
             
-            rng.gen::<Synapse>()
+    //         rng.gen::<Synapse>()
     
-        ).collect::<Vec<Synapse>>();
+    //     ).collect::<Vec<Synapse>>();
 
     
         
-        return Matrix::from_raw_data(row, col, data);
+    //     return Matrix::from_raw_data(row, col, data);
 
-    }
+    // }
 
     
 
