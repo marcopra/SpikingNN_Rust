@@ -15,8 +15,8 @@ pub trait Model {
     /// f64, used for synapses.
     const SPIKE_WEIGHT: f64;
 
-    /// Handle the incoming spike
-    fn handle_spike(neuron: &mut Self::Neuron, weighted_input_val: f64) -> bool;
+    /// Handle the incoming spike 
+    fn handle_spike(neuron: &mut Self::Neuron, weighted_input_val: f64) -> f64;
 
     fn set_new_params(neuron: &mut Self::Neuron, nc: &Self::Config);
 }

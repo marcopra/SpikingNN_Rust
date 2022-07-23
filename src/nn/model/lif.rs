@@ -103,7 +103,7 @@ impl Model for LeakyIntegrateFire {
     /// After this code, the neuron may possibly have fired the spike.
     
     //TODO Cambiare da Option<Spike> a 1 o 0 per uso interno per andare a creare il vettore di output da moltiplicare con la matrice
-    fn handle_spike(neuron: &mut LifNeuron, weighted_input_val: f64) -> bool
+    fn handle_spike(neuron: &mut LifNeuron, weighted_input_val: f64) -> f64
     {
          let delta_t: f64 = (neuron.ts_old - neuron.ts_curr) as f64;
 
@@ -115,10 +115,12 @@ impl Model for LeakyIntegrateFire {
             neuron.v_mem_current = neuron.v_reset;
 
             //TODO change return...
-            return true; 
+            //Fire Spike
+            return 1.; 
         }
         
-        false
+        //No spike
+        0.
     }
 
     fn set_new_params(neuron: &mut LifNeuron, nc: &Self::Config) {
@@ -151,7 +153,7 @@ impl LifNeuron {
         }
     }
 
-        /// Create a new array of Neuron structs, starting from a given array of NeuronConfig.
+    /// Create a new array of Neuron structs, starting from a given array of NeuronConfig.
     /// 
     /// If the array of NeuronConfig contains a single element, it will be used for 
     /// all the _'dim'_ neurons required.
