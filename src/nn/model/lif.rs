@@ -193,7 +193,6 @@ impl LifNeuron {
 
 impl LifNeuronConfig {
     pub fn new(
-        v_mem_current: f64,
         v_rest: f64,
         v_reset: f64,
         v_threshold: f64,
@@ -217,14 +216,12 @@ mod tests {
     fn test_config_neurons() {
         //Config Definitions
         let nc = LifNeuronConfig::new(
-            0.3, 
             0.2,
             0.1, 
             0.45, 
             0.23);
     
         let nc2 = LifNeuronConfig::new(
-            0.1, 
             2.3, 
             12.2, 
             0.8, 

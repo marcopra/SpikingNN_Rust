@@ -177,7 +177,7 @@ impl<M: Model, const LEN_LAST_LAYER: usize> NNBuilder<M, NotZero<LEN_LAST_LAYER>
     pub fn layer<const N: usize>(
         mut self,
         layer: impl Borrow<[M::Neuron; N]>,
-        input_weights: impl Borrow<[[f64; LEN_LAST_LAYER]; N]>,
+        input_weights: impl Borrow<[[f64; N]; LEN_LAST_LAYER]>,
         intra_weights: impl Borrow<[[f64; N]; N]>
     ) -> NNBuilder<M, NotZero<N>>
     {
@@ -235,10 +235,43 @@ impl<M: Model> Debug for NNBuilder<M, Dynamic> {
 //TODO 
 #[cfg(test)]
 mod tests {
+    use crate::sync::NeuronToken;
+    use crate::{NN, NNBuilder, LifNeuron, LifNeuronConfig};
+    use crate::nn::Model;
+
 
     #[test]
-    fn test_buildin_new_NN() {
+    fn test_building_new_NN() {
+        let nc = LifNeuronConfig::new(
+            0.2,
+            0.1, 
+            0.45, 
+            0.23);
 
+        let neurons = LifNeuron::new_vec([nc].to_vec(), 3);
+
+        /*let my_nn = NNBuilder::new()
+        .layer(
+            &[neurons],
+            &[0.1, 3.0],
+            &[
+                [0.0, -0.3],
+                [-1.5, 0.0]
+            ]
+        )
+        // Insert 2nd (and exit) layer
+        .layer(
+            &[Neuron{}, Neuron{}, Neuron{}],
+            &[
+                [1.1, 2.2],
+                [3.3, 4.4],
+                [5.5, 6.6]
+            ],
+            &[
+                [0.0, -0.1, -0.2],
+                [-0.3, 0.0, -0.4],
+                [-0.5, -0.6, 0.0]
+            ]);*/
     }
 
     #[test]

@@ -7,6 +7,7 @@ use ndarray::{Array2, OwnedRepr, ArrayBase, Dim};
 pub struct Solver<M: Model>{
     input_spikes: Vec<Spike>,
     network: NN<M>,
+    sim_network: SimulatedNN<M>,
     output_spikes: Vec<Spike>
 }
 
@@ -41,6 +42,7 @@ impl<M: Model> Solver<M> {
     pub fn new(input_spikes: Vec<Spike>, network: NN<M>) -> Solver<M> {
         Solver { 
             input_spikes, 
+            sim_network: Solver::init_neuron_vars(&network),
             network, 
             output_spikes: Vec::new() }
     }
@@ -51,17 +53,18 @@ impl<M: Model> Solver<M> {
 
         //Neuron variables inizialization 
         let mut sim_network = Self::init_neuron_vars(&(self.network));
+        let mut nn_output: Vec<Vec<Spike>> = Vec::new();
 
         for spike in self.input_spikes.iter() {
 
             //Spikes in the layer 0
-            let spike_vec_from_input_layer = Self::apply_spike_to_input_layer_neuron(spike.neuron_id, 
+            let spike_vec_from_input_layer = Solver::apply_spike_to_input_layer_neuron(spike.neuron_id, 
                 spike.ts, 
-                &mut self.network, 
+                &self.network, 
                 &mut sim_network);
 
             //Propagation of spikes inside the network
-            Self::infer_spike_vec(spike_vec_from_input_layer);
+            nn_output.push(Solver::infer_spike_vec(&self.network, &mut sim_network, spike_vec_from_input_layer, spike.ts));
         }
     }
 
@@ -83,34 +86,77 @@ impl<M: Model> Solver<M> {
                 sim_neuron = SimulatedNeuron::new();
                 sim_layer.push(sim_neuron);
             }
-
             sim_nn.add_layer(sim_layer);
         }
-        
         sim_nn
     }
 
-    //Spikes inside the network
-    fn infer_spike_vec(spike_vec: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>){
-        todo!();
-        return ;
+    /// Propagate Spikes inside the network and then create a Vec of spike
+    fn infer_spike_vec(network: & NN<M> , sim_network: &mut SimulatedNN<M> , spike_vec: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ts: u128) -> Vec<Spike> {
+
+        let out_spikes: Vec<Spike> = Vec::new();
+        let mut neuron_params: &Vec<M::Neuron> ;
+        let mut neuron_vars: &mut Vec<SimulatedNeuron<M>> ;
+        let mut output_vec: Vec<f64>;
+
+        let mut current_spike_vec = spike_vec;
+
+        //per ogni layer della rete prende il layer e il rispettivo layer simulato (Con le vars)
+        // crea i vettori di support per l'input e per l'output del layer i-esimo 
+
+        // Elabora per ogni neurone del layer il rispettivo output (se spike o meno)
+        for (layer, sim_layer) in network.layers.iter().zip(&mut sim_network.layers){
+            
+            //prende i params del layer i-esimo
+            neuron_params = &layer.neurons;
+            //prende le vars del layer i-esimo
+            neuron_vars = sim_layer;
+
+            //crea il vettore che tiene le spike generate dai vari neuroni 
+            output_vec = Vec::new();
+            //creo il vettore di input per i neuroni tramite prodotto vec x mat
+            let weighted_input_val = current_spike_vec.dot(&layer.inter_weigth_matrix);
+            let intra_layer_input_val = current_spike_vec.dot((&layer.intra_weigth_matrix));
+            // per ogni neurone, attivo la funzione handle_spike coi suoi parametri e le sue variabili, 
+            // prese dai vettori inizializzati precedentemente
+            // raccolgo l'output nel vettore
+            for (i, neuron) in layer.neurons.iter().enumerate(){
+                
+                let res = M::handle_spike(neuron, 
+                    &mut neuron_vars[i].vars, 
+                    weighted_input_val[[i,0]], 
+                    ts);
+                output_vec.push(res);
+
+
+            }
+
+            //aggiorna la spike di input corrente con il vettore di spike appena creato
+            current_spike_vec =  Array2::from_shape_vec([output_vec.len(), 1], output_vec).unwrap();
+
+        }
+
+        out_spikes
+
+
     }
 
-    //TODO fare doc per questa funzione che è un po complessa ad occhio
-    //TODO trovare nome + esplicito e conciso
+    //TODO CERCARE DI UNIRE QUESTA FUNZIONE ALLA INFER_SPIKE
+
     fn apply_spike_to_input_layer_neuron(
                                 neuron_id: usize, 
                                 ts: u128, 
                                 network: &NN<M>, 
                                 sim_network: &mut SimulatedNN<M>)-> Array2<f64> {
 
-        //[2 ]
-        let n_neurons_layer0 = network.layers[0].0.len();
+        //get dimension of the input layer
+        let n_neurons_layer0 = network.layers[0].neurons.len();
 
+        //input val for neuron_id-th neuron is 1 times the corresponding input_weight
         let weighted_input_val: f64 = network.input_weights[neuron_id];  
 
-         //prendo il neurone n_id-esimo dal layer
-        let neuron_params = &network.layers[0].0[neuron_id];
+        //Obtain the neuron_id-th neuron (parameters and variables) from the input layer 
+        let neuron_params = &network.layers[0].neurons[neuron_id];
         let neuron_vars = &mut sim_network.layers[0][neuron_id].vars;
 
         //faccio handle_spike(spike) e ritiriamo il suo output (una sorta di spike ma per gestione interna)
@@ -132,7 +178,7 @@ impl<M: Model> Solver<M> {
         
         let arr_spike = Array2::from_shape_vec((1, n_neurons_layer0), vec_spike).unwrap();
 
-        let intra_layer_weights = &network.layers[0].1;
+        let intra_layer_weights = &network.layers[0].intra_weights_matrix;
         
         //Vettore di valori da dare agli altri neuroni dello stesso layer
         let intra_layer_weighted_val = arr_spike.dot(intra_layer_weights);
@@ -141,7 +187,7 @@ impl<M: Model> Solver<M> {
         //spike in ingresso) calcoliamo la nuova tensione
         for n_id in 0..n_neurons_layer0 {
             if n_id != neuron_id{
-                let neuron = &network.layers[0].0[n_id];
+                let neuron = &network.layers[0].neurons[n_id];
                 let sim_neuron = &mut sim_network.layers[0][n_id].vars;
                 M::handle_spike(
                         neuron, 
