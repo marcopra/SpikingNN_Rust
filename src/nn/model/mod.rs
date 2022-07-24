@@ -9,7 +9,7 @@ pub trait Model {
     type Neuron: Sized + Clone;
 
     /// Contains the dynamic variables for each Neuron used by the solver
-    type SolverVars;
+    type SolverVars: Default;
     
     /// Helper type to build neurons
     type Config: RefInto<Self::Neuron>;
