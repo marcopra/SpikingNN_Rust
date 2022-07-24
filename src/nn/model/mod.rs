@@ -6,7 +6,7 @@ use ndarray::Array2;
 pub trait Model {
     /// A struct for a single Neuron of the SNN.
     /// Each Neuron has its own parameters such as _current membrane tension_, _threshold tension_ etc...
-    type Neuron: Sized + Clone;
+    type Neuron: 'static + Sized + Clone + Sync + RefInto<Self::SolverVars>;
 
     /// Contains the dynamic variables for each Neuron used by the solver
     type SolverVars;

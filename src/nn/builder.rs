@@ -177,7 +177,7 @@ impl<M: Model, const LEN_LAST_LAYER: usize> NNBuilder<M, NotZero<LEN_LAST_LAYER>
     pub fn layer<const N: usize>(
         mut self,
         layer: impl Borrow<[M::Neuron; N]>,
-        input_weights: impl Borrow<[[f64; LEN_LAST_LAYER]; N]>,
+        input_weights: impl Borrow<[[f64; N]; LEN_LAST_LAYER]>,
         intra_weights: impl Borrow<[[f64; N]; N]>
     ) -> NNBuilder<M, NotZero<N>>
     {
@@ -237,7 +237,7 @@ impl<M: Model> Debug for NNBuilder<M, Dynamic> {
 mod tests {
 
     #[test]
-    fn test_buildin_new_NN() {
+    fn test_buildin_new_nn() {
 
     }
 
