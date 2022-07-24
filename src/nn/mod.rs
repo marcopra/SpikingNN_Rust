@@ -1,4 +1,4 @@
-use ndarray::{Array2, Array1};
+use ndarray::{Array2, Array1, OwnedRepr, Array, Dim, ArrayBase};
 
 use crate::{Model, sync::LayerManager};
 

@@ -54,17 +54,19 @@ impl<M: Model> Solver<M> {
         //Neuron variables inizialization 
         let mut sim_network = Self::init_neuron_vars(&(self.network));
         let mut nn_output: Vec<Vec<Spike>> = Vec::new();
+        
 
         for spike in self.input_spikes.iter() {
 
-            //Spikes in the layer 0
-            let spike_vec_from_input_layer = Solver::apply_spike_to_input_layer_neuron(spike.neuron_id, 
-                spike.ts, 
-                &self.network, 
-                &mut sim_network);
+            //prende la dim dell'input
+            let dim_input = self.network.layers[0].neurons.len();
+
+            //Crea il primo array da moltiplicare con la prima matrice (diagonale) dei pesi (matrice di input)
+            let spike_array = Solver::single_spike_to_vec(spike.neuron_id, dim);
 
             //Propagation of spikes inside the network
-            nn_output.push(Solver::infer_spike_vec(&self.network, &mut sim_network, spike_vec_from_input_layer, spike.ts));
+            let res = Solver::infer_spike_vec(&self.network, &mut sim_network, spike_array, spike.ts)
+            nn_output.push(res);
         }
     }
 
@@ -95,9 +97,12 @@ impl<M: Model> Solver<M> {
     fn infer_spike_vec(network: & NN<M> , sim_network: &mut SimulatedNN<M> , spike_vec: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ts: u128) -> Vec<Spike> {
 
         let out_spikes: Vec<Spike> = Vec::new();
+
+        //init del vettore che conterrà i parametri del layer i-esimo
         let mut neuron_params: &Vec<M::Neuron> ;
+        //del vec che conterrà le variabili del simulated_layer i-esimo
         let mut neuron_vars: &mut Vec<SimulatedNeuron<M>> ;
-        let mut output_vec: Vec<f64>;
+        
 
         let mut current_spike_vec = spike_vec;
 
@@ -113,13 +118,18 @@ impl<M: Model> Solver<M> {
             neuron_vars = sim_layer;
 
             //crea il vettore che tiene le spike generate dai vari neuroni 
-            output_vec = Vec::new();
-            //creo il vettore di input per i neuroni tramite prodotto vec x mat
+            let mut output_vec: Vec<f64> = Vec::new();
+
+            // qui current_spike_vec è qualcosa del tipo [0 1 0 0 0]' oppure  [ 0 1 0 0 1] ed
+            // è generato dal layer precedente.
+            //creo il vettore dei valori di input per i neuroni ricevuti dal layer precedente, tramite prodotto vec x mat
             let weighted_input_val = current_spike_vec.dot(&layer.inter_weigth_matrix);
-            let intra_layer_input_val = current_spike_vec.dot((&layer.intra_weigth_matrix));
+
+
             // per ogni neurone, attivo la funzione handle_spike coi suoi parametri e le sue variabili, 
             // prese dai vettori inizializzati precedentemente
             // raccolgo l'output nel vettore
+            // Gestisce gli input dal layer precedente
             for (i, neuron) in layer.neurons.iter().enumerate(){
                 
                 let res = M::handle_spike(neuron, 
@@ -127,13 +137,28 @@ impl<M: Model> Solver<M> {
                     weighted_input_val[[i,0]], 
                     ts);
                 output_vec.push(res);
-
-
             }
 
             //aggiorna la spike di input corrente con il vettore di spike appena creato
-            current_spike_vec =  Array2::from_shape_vec([output_vec.len(), 1], output_vec).unwrap();
+            current_spike_vec =  Array2::from_shape_vec([1, output_vec.len()], output_vec).unwrap();
 
+            /*una volta che il layer ha elaborato l'input, bisogna simulare 
+            le spike che arrivano ai neuroni dello stesso strato usando il nuovo current_spike_vec aggiornato*/
+
+            //creo il vettore dei valori di input per i neuroni ricevuti dal neurone dello stesso layer che ha fatto la spike, tramite prodotto vec x mat
+            let intra_layer_input_val = current_spike_vec.dot((&layer.intra_weigth_matrix));
+
+            // per ogni neurone, attivo la funzione handle_spike coi suoi parametri e le sue variabili, 
+            // prese dai vettori inizializzati precedentemente
+            // raccolgo l'output nel vettore
+            // Gestisce gli input dai neuroni dello stesso layer
+            for (i, neuron) in layer.neurons.iter().enumerate(){
+                
+                M::handle_spike(neuron, 
+                    &mut neuron_vars[i].vars, 
+                    intra_layer_input_val[[i,0]], 
+                    ts);
+            }
         }
 
         out_spikes
@@ -164,19 +189,8 @@ impl<M: Model> Solver<M> {
         
         //vettore con un solo elemento a 1 in posizione neuro_id-esima
         let mut vec_spike: Vec<f64> = Vec::new();
-
-        //TODO Fare una funzione che racchiuda sti for brutti
-        for i in 0..n_neurons_layer0 {
-    
-            if i == neuron_id{
-                vec_spike[i] = 1.;
-            }
-            else{
-                vec_spike[i] = 0.;
-            }
-        }
         
-        let arr_spike = Array2::from_shape_vec((1, n_neurons_layer0), vec_spike).unwrap();
+        let arr_spike = Solver::single_spike_to_vec(neuron_id, n_neurons_layer0);
 
         let intra_layer_weights = &network.layers[0].intra_weights_matrix;
         
@@ -200,6 +214,28 @@ impl<M: Model> Solver<M> {
         return arr_spike;
     }
 
+    /// Create a zero array, but with a single '1' in the neuron_id-th position
+    /// 
+    /// # Example 
+    /// 
+    ///  TODO @marcopra (prova)
+    pub fn single_spike_to_vec(neuron_id: usize, dim: usize) -> ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> {
+
+        let mut res: Vec<f64> = Vec::new();
+
+        for i in 0..dim {
+
+            if i == neuron_id {
+                res[i] = 1.;
+            }
+            else {
+                res[i] = 0.;
+            }
+        }
+        Array2::from_shape_vec([1, dim], res).unwrap()
+    }
+
+    
     /*
     pub fn SIMULT_solve(&mut self){
 
@@ -284,4 +320,17 @@ impl<M: Model> Solver<M> {
         
     }
     */
+}
+
+#[cfg(test)]
+mod tests {
+    
+    #[test]
+    fn test_init_simulated_nn() {
+        
+    }
+
+    fn test_correct_management_of_example_spike(){
+
+    }
 }
