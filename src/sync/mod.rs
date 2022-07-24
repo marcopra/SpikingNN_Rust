@@ -71,11 +71,42 @@ impl<'a> LayerManager<'a> {
         )
     }
     
-    /// Commit the result of the current spike's handling and wait for the next spike.
+    /// Wait for the next spike.
+    /// 
     /// If the return value is a `None`, it means that no spikes will ever be received
     /// on this interface, and the neuron must finish, otherwise the contained value
-    /// is the weighted input for the specific neuron.
-    pub fn next(&self, token: &NeuronToken, spiked: bool, val: f64) -> Option<f64> {
+    /// is the tuple with timestamp of the spike and weighted input for the specific neuron.
+    pub fn next(&self, token: &NeuronToken) -> Option<(u128, f64)> {
+        self.barrier.wait(|| {
+            // Check if any neuron spiked during this time slot
+            if self.spiked.fetch_and(false, Ordering::SeqCst) {
+                // Need to clone to be able to send to the next layer, ughh
+                let spike_array = unsafe {
+                    &*self.cur.get()
+                };
+
+                // Send to next layer
+                self.output.send(spike_array.clone()).unwrap();
+
+                // Handle intra spikes (note that the timestamp remains the same)
+                Some(spike_array.1.dot(self.synapses_intra))
+            } else {
+                // No neuron spiked -> no need to send anything to the next layer
+                // Get next spike from input receiver
+                self.input.recv().ok().map(|(ts, arr)| {
+                    // Set new timestamp
+                    unsafe {
+                        (*self.cur.get()).0 = ts;
+                    }
+
+                    arr.dot(self.synapses_input)
+                })
+            }
+        }).map(|a| (unsafe { (*self.cur.get()).0 }, a[(0, token.neuron_id)]))
+    }
+
+    /// Commit the result of the previous spike by the 
+    pub fn commit(&self, token: &NeuronToken, spiked: bool, val: f64) {
         // Token valid?
         if token.layer_manager_id != self.id {
             panic!("Used invalid token for LayerManager");
@@ -86,34 +117,7 @@ impl<'a> LayerManager<'a> {
 
         // Set val in shared array
         unsafe {
-            (&mut *self.cur.get()).1[(0, token.neuron_id)] = val;
+            (*self.cur.get()).1[(0, token.neuron_id)] = val;
         };
-        
-        self.barrier.wait(|| {
-            // Check if any neuron spiked during this time slot
-            if self.spiked.fetch_and(false, Ordering::SeqCst) {
-                // Need to clone to be able to send to the next layer, ughh
-                let spike_array = unsafe {
-                    (&*self.cur.get()).clone()
-                };
-
-                // Send to next layer
-                self.output.send(spike_array).unwrap();
-
-                // Handle intra spikes (note that the timestamp remains the same)
-                Some(spike_array.1 * self.synapses_intra)
-            } else {
-                // No neuron spiked -> no need to send anything to the next layer
-                // Get next spike from input receiver
-                self.input.recv().ok().map(|(ts, arr)| {
-                    // Set new timestamp
-                    unsafe {
-                        (&mut *self.cur.get()).0 = ts;
-                    }
-
-                    arr * self.synapses_input
-                })
-            }
-        }).map(|a| a[(0, token.neuron_id)])
     }
 }

@@ -43,7 +43,8 @@ impl<T: Sync> ProgrammableBarrier<T> {
         lock.count += 1;
 
         if lock.count < self.num_threads {
-            lock = self.cvar.wait_while(lock, |bs| local_gen == bs.generation_id).unwrap();
+            // Drop is useless here, but silences a warning by clippy
+            drop(self.cvar.wait_while(lock, |bs| local_gen == bs.generation_id).unwrap());
         } else {
             // This code here will execute in mutual exclusion by just one of the participating threads.
             // Before unlocking all the other threads, execute the given f

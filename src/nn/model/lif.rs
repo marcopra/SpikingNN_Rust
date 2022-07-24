@@ -25,15 +25,18 @@ pub struct LifNeuron {
 }
 
 /// A struct with variables only used in simulation (solve)
-#[derive(Clone, Debug)]
-struct LifSolverVars {
+#[derive(Clone, Debug, Default)]
+pub struct LifSolverVars {
     v_mem: f64,
     ts_old: u128,  
 }
 
-impl Default for LifSolverVars{
-    fn default() -> Self {
-        Self { v_mem: Default::default(), ts_old: Default::default() }
+impl From<&LifNeuron> for LifSolverVars {
+    fn from(neuron: &LifNeuron) -> Self {
+        Self {
+            v_mem: neuron.v_rest,
+            ts_old: 0
+        }
     }
 }
 
@@ -140,7 +143,6 @@ impl Model for LeakyIntegrateFire {
     
 }
 
-
 // IMPLEMENTATION FOR LIF NEURONS & LIF NEURON CONFIG
 
 impl LifNeuron {
@@ -227,7 +229,7 @@ mod tests {
             0.8, 
             0.7);
 
-        let ne = LifNeuron::from(&nc);
+        let _ne = LifNeuron::from(&nc);
         let mut neuron = LifNeuron::new(&nc);
 
         LeakyIntegrateFire::set_new_params(&mut neuron, &nc2);
