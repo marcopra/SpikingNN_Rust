@@ -24,7 +24,8 @@ pub struct LifNeuron {
     tau: f64,
 }
 
-#[derive(Clone, Debug)]
+/// A struct with variables only used in simulation (solve)
+#[derive(Clone, Debug, Default)]
 pub struct LifSolverVars {
     v_mem: f64,
     ts_old: u128,  
@@ -137,6 +138,9 @@ impl Model for LeakyIntegrateFire {
         neuron.v_threshold =  nc.v_threshold;
         neuron.tau = nc.tau;
     }
+
+
+    
 }
 
 // IMPLEMENTATION FOR LIF NEURONS & LIF NEURON CONFIG
