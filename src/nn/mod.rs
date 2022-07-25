@@ -222,7 +222,7 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{nn::Spike, NNBuilder, LeakyIntegrateFire, LifNeuronConfig};
+    use crate::{nn::{Spike, solver_v1::Solver}, NNBuilder, LeakyIntegrateFire, LifNeuronConfig, Model};
     
     #[test]
     fn test_spike_vec_for(){
@@ -295,8 +295,14 @@ mod tests {
             Spike::spike_vec_for(1, vec![2, 3, 5, 7, 11, 20]) // No simultaneous spikes
         ]);
 
-        let output = nn.solve(spikes);
+        let output = nn.solve(spikes.clone());
         println!("{:?}", output); // [[0, 2, 5, 7, 10, 14, 20], [0, 2, 5, 7, 10, 14, 20], [0, 1, 2, 5, 6, 7, 10, 14, 20]]
+
+        println!("Then ------------------------------------");
+        let mut single_solver = Solver::new(spikes, nn);
+        let second_output = single_solver.solve();
+
+        println!("{:?}", second_output);
     }
 }
 
