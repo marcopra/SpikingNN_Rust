@@ -117,14 +117,10 @@ impl<M: Model> Solver<M> {
             //prende le vars del layer i-esimo
             neuron_vars = sim_layer;
 
-            //crea il vettore che tiene le spike generate dai vari neuroni 
-            let mut output_vec: Vec<f64> = Vec::new();
-
             // qui current_spike_vec è qualcosa del tipo [0 1 0 0 0]' oppure  [ 0 1 0 0 1] ed
             // è generato dal layer precedente.
             //creo il vettore dei valori di input per i neuroni ricevuti dal layer precedente, tramite prodotto vec x mat
             let weighted_input_val = current_spike_vec.dot(&layer.input_weights);
-
 
             // per ogni neurone, attivo la funzione handle_spike coi suoi parametri e le sue variabili, 
             // prese dai vettori inizializzati precedentemente
@@ -214,26 +210,7 @@ impl<M: Model> Solver<M> {
         return arr_spike;
     }
 
-    /// Create a zero array, but with a single '1' in the neuron_id-th position
-    /// 
-    /// # Example 
-    /// 
-    ///  TODO @marcopra (prova)
-    pub fn single_spike_to_vec(neuron_id: usize, dim: usize) -> ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> {
 
-        let mut res: Vec<f64> = Vec::new();
-
-        for i in 0..dim {
-
-            if i == neuron_id {
-                res[i] = 1.;
-            }
-            else {
-                res[i] = 0.;
-            }
-        }
-        Array2::from_shape_vec([1, dim], res).unwrap()
-    }
 
     
     /*
