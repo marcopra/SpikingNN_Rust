@@ -1,4 +1,4 @@
-use ndarray::{Array2, Array1};
+use ndarray::Array2;
 
 use crate::{Model, sync::LayerManager};
 
@@ -121,7 +121,7 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
         // These will be respectively the first layer's sender and the last layer's receiver
         let (sender, mut receiver) = channel();
         
-        for Layer {neurons, input_weights, intra_weights} in self.layers.iter().skip(1) {
+        for Layer {neurons, input_weights, intra_weights} in &self.layers {
             let (layer_sender, layer_receiver) = channel();
             
             // Create the LayerManager for this layer
@@ -155,52 +155,18 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
             }
         }
 
-        // Handle first layer
+        // Inject spikes into first layer
         {
-            // Note that any nn will have at least one layer. Always.
-            // Generate SolverVars for each neuron
-            let mut layer = self.layers[0].neurons.iter()
-                .map(|neuron| (neuron, neuron.into()))
-                .collect::<Vec<(_, M::SolverVars)>>();
+            let mut spike_iterator = spikes.into_iter().peekable();
+            while let Some(Spike {ts, neuron_id}) = spike_iterator.next() {
+                let mut to_send = Array2::zeros((1, self.layers[0].neurons.len()));
+                to_send[(0, neuron_id)] = 1.0; // Should we validate neuron_ids?
 
-            // Used when necessary to inject intra-spikes into layer
-            let mut intra_inputs: Option<Array1<f64>> = None;
-            let mut inputs = spikes.into_iter();
-            let mut cur_ts = 0;
-
-            loop {
-                // TODO: for now forbid multiple simultaneous input spikes
-                if let Some(intra_arr) = intra_inputs.take() {
-                    let mut spiked = false;
-                    let output = Array2::from_shape_fn(
-                        (1, layer.len()),
-                        |(_, i)| {
-                            let output = M::handle_spike(layer[i].0, &mut layer[i].1, intra_arr[i], cur_ts);
-                            if output > 0.5 { spiked = true; }
-                            output
-                        }
-                    );
-                    if spiked {
-                        sender.send((cur_ts, output.clone())).unwrap();
-                        intra_inputs = Some((output.dot(&self.layers[0].intra_weights)).row(0).to_owned());
-                    }
-                } else {
-                    // Get the next spike from the input spikes
-                    match inputs.next() {
-                        Some(Spike{ neuron_id, ts }) => {
-                            cur_ts = ts;
-                            
-                            // Apply the spike
-                            let output = M::handle_spike(layer[neuron_id].0, &mut layer[neuron_id].1, self.layers[0].input_weights[(0, neuron_id)], ts);
-                            if output > 0.5 { // TODO: do we really want this?
-                                // Neuron spiked, send spike to next layer and enqueue intra-spikes
-                                sender.send((ts, Array2::from_shape_fn((1, layer.len()), |(_, i)| if i == neuron_id { output } else { 0.0 }))).unwrap();
-                                intra_inputs = Some(self.layers[0].intra_weights.row(neuron_id).to_owned() * output);
-                            }
-                        },
-                        None => break
-                    }
+                while let Some(Spike {neuron_id, ..}) = spike_iterator.next_if(|s| s.ts == ts) {
+                    to_send[(0, neuron_id)] = 1.0;
                 }
+
+                sender.send((ts, to_send)).unwrap();
             }
         }
 
@@ -222,7 +188,7 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{nn::{Spike, solver_v1::Solver}, NNBuilder, LeakyIntegrateFire, LifNeuronConfig, Model};
+    use crate::{nn::{Spike, solver_v1::Solver}, NNBuilder, LeakyIntegrateFire, LifNeuronConfig};
     
     #[test]
     fn test_spike_vec_for(){

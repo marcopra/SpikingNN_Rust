@@ -245,7 +245,7 @@ mod tests {
     use crate::{LifNeuron, LifNeuronConfig};
 
     #[test]
-    fn test_building_new_NN() {
+    fn test_building_new_nn() {
         let nc = LifNeuronConfig::new(
             0.2,
             0.1, 
