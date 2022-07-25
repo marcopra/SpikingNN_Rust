@@ -15,9 +15,10 @@ struct SimulatedNeuron<M: Model> {
     vars: M::SolverVars
 }
 
-impl<M: Model> SimulatedNeuron<M> {
-    pub fn new() -> SimulatedNeuron<M>{
-        SimulatedNeuron { vars: Default::default() }
+impl<M: Model> SimulatedNeuron<M> 
+where for <'a> &'a M::Neuron: Into<M::SolverVars> {
+    pub fn new(neuron: &M::Neuron) -> SimulatedNeuron<M>{
+        SimulatedNeuron { vars: neuron.into()}
     }
 }
 struct SimulatedNN<M: Model> {
@@ -37,7 +38,8 @@ impl<M: Model> SimulatedNN<M> {
     }
 }
 
-impl<M: Model> Solver<M> {
+impl<M: Model> Solver<M> 
+where for <'a> &'a M::Neuron: Into<M::SolverVars> {
     
     pub fn new(input_spikes: Vec<Spike>, network: NN<M>) -> Solver<M> {
         Solver { 
@@ -87,7 +89,7 @@ impl<M: Model> Solver<M> {
             sim_layer = Vec::with_capacity(layer.neurons.len());
 
             for neuron in layer.neurons.iter() {
-                sim_neuron = SimulatedNeuron::new();
+                sim_neuron = SimulatedNeuron::new(neuron);
                 sim_layer.push(sim_neuron);
             }
             sim_nn.add_layer(sim_layer);
@@ -348,7 +350,7 @@ impl<M: Model> Solver<M> {
         for &val in vec.iter(){
 
             if val > 0.0 { res.push(val_to_set)}
-            else {res.push(0_u128)};
+            else {res.push(999_u128)};
         }   
         res 
     }

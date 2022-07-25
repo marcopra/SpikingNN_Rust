@@ -1,9 +1,9 @@
-use ndarray::Array2;
+use ndarray::{Array2, ArrayBase, OwnedRepr, Dim};
 
 use crate::{Model, sync::LayerManager};
 
 use self::model::Layer;
-use std::{fmt, sync::{Arc, mpsc::channel}, mem::replace, thread, intrinsics::transmute};
+use std::{fmt, sync::{Arc, mpsc::channel}, mem::replace, thread, intrinsics::transmute, ops::Range};
 
 pub mod model;
 pub(crate) mod builder;
@@ -186,9 +186,21 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
     }
 }
 
+
+fn rand_matrix(dim: &[usize;2] , range: Range<usize>) ->  ArrayBase<OwnedRepr<f64>, Dim<[usize;2] >>{
+    
+    todo!();
+    let matrix: ArrayBase<OwnedRepr<f64>, Dim<[usize;2] >> ;
+    matrix
+}
+
 #[cfg(test)]
 mod tests {
+    use std::ops::Range;
+
     use crate::{nn::{Spike, solver_v1::Solver}, NNBuilder, LeakyIntegrateFire, LifNeuronConfig};
+
+    use super::rand_matrix;
     
     #[test]
     fn test_spike_vec_for(){
@@ -262,13 +274,23 @@ mod tests {
         ]);
 
         let output = nn.solve(spikes.clone());
-        println!("{:?}", output); // [[0, 2, 5, 7, 10, 14, 20], [0, 2, 5, 7, 10, 14, 20], [0, 1, 2, 5, 6, 7, 10, 14, 20]]
+        println!("\n\nOUTPUT MULTI THREAD: {:?}", output); // [[0, 2, 5, 7, 10, 14, 20], [0, 2, 5, 7, 10, 14, 20], [0, 1, 2, 5, 6, 7, 10, 14, 20]]
 
         println!("Then ------------------------------------");
         let mut single_solver = Solver::new(spikes, nn);
         let second_output = single_solver.solve();
 
         println!("\n\nOUTPUT SINGLE THREAD: {:?}", second_output);
+    }
+
+    fn test_random_matrix(){
+
+        //TODO @marcopra
+        let dim: [usize; 2] = [2,3];
+        let range: Range<usize> = 0..2;
+        let matrix = rand_matrix(&dim, range);
+        // 2 righe 3 colonne e con numeri randomici che vanno tra 0 e 2 
+        //e se non specificato tra 0 e 1 (vedi se si può fare)
     }
 }
 
