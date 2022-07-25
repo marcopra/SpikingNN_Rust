@@ -51,7 +51,7 @@ impl<M: Model> Solver<M> {
 
     /// Each spike of the input_spike vec is sent to the corresponding neuron 
     /// of the input layer, one by one.
-    pub fn solve(&mut self){
+    pub fn solve(&mut self) -> Vec<Vec<u128>>{
 
         //Neuron variables inizialization 
         let mut sim_network = Self::init_neuron_vars(&(self.network));
@@ -70,6 +70,7 @@ impl<M: Model> Solver<M> {
             let res = Solver::infer_spike_vec(&self.network, &mut sim_network, spike_array, spike.ts);
             nn_output.push(res);
         }
+        nn_output
     }
 
     /// _*--> (Internal Use Only)*_
@@ -129,6 +130,9 @@ impl<M: Model> Solver<M> {
             // qui current_spike_vec è qualcosa del tipo [0 1 0 0 0]' oppure  [ 0 1 0 0 1] ed
             // è generato dal layer precedente.
             //creo il vettore dei valori di input per i neuroni ricevuti dal layer precedente, tramite prodotto vec x mat
+            
+            println!("EEE OOOOO O OO O O  {}\n\n STTTOOOOP", current_spike_vec);
+            println!("EEE OOOOO O OO O O  {}\n\n STTTOOOOP", layer.input_weights);
             let weighted_input_val = current_spike_vec.dot(&layer.input_weights);
 
             // per ogni neurone, attivo la funzione handle_spike coi suoi parametri e le sue variabili, 
@@ -145,6 +149,7 @@ impl<M: Model> Solver<M> {
             }
 
             //aggiorna la spike di input corrente con il vettore di spike appena creato
+            println!("EEE OOOOO O OO O O  {:?}\n\n STTTOOOOP", current_spike_vec);
             current_spike_vec =  Array2::from_shape_vec([1, output_vec.len()], output_vec.clone()).unwrap();
 
             /*una volta che il layer ha elaborato l'input, bisogna simulare 
@@ -323,8 +328,8 @@ impl<M: Model> Solver<M> {
         let mut res: Vec<f64> = Vec::new();
 
         for i in 0..dim {
-            if i == neuron_id {res[i] = 1.;}
-            else {res[i] = 0.;}
+            if i == neuron_id {res.push(1.);}
+            else {res.push(0.)}
         }
         Array2::from_shape_vec([1, dim], res).unwrap()
     }
