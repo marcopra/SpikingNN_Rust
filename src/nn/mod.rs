@@ -302,7 +302,7 @@ mod tests {
         let mut single_solver = Solver::new(spikes, nn);
         let second_output = single_solver.solve();
 
-        println!("{:?}", second_output);
+        println!("\n\nOUTPUT SINGLE THREAD: {:?}", second_output);
     }
 }
 

@@ -66,6 +66,7 @@ impl<M: Model> Solver<M> {
 
             //Propagation of spikes inside the network
             let res = Solver::infer_spike_vec(&self.network, &mut sim_network, spike_array, spike.ts);
+        
             nn_output.push(res);
         }
         nn_output
@@ -99,9 +100,10 @@ impl<M: Model> Solver<M> {
                 network: & NN<M>, 
                 sim_network: &mut SimulatedNN<M>, 
                 spike_vec: ArrayBase<OwnedRepr<f64>, 
-                Dim<[usize; 2]>>, ts: u128) -> Vec<u128> {
+                Dim<[usize; 2]>>, 
+                ts: u128) -> Vec<u128> {
 
-        let mut out_spikes: Vec<u128>;
+        let mut out_spikes: Vec<u128> = Vec::new();
 
         //crea il vettore che tiene le spike generate dai vari neuroni 
         let mut output_vec: Vec<f64> = Vec::new();
@@ -129,8 +131,8 @@ impl<M: Model> Solver<M> {
             // è generato dal layer precedente.
             //creo il vettore dei valori di input per i neuroni ricevuti dal layer precedente, tramite prodotto vec x mat
             
-            println!("EEE OOOOO O OO O O  {}\n\n STTTOOOOP", current_spike_vec);
-            println!("EEE OOOOO O OO O O  {}\n\n STTTOOOOP", layer.input_weights);
+            //println!("current_spike_vec  {}\n\n STTTOOOOP", current_spike_vec);
+            //println!("layer.input_weights  {}\n\n STTTOOOOP", layer.input_weights);
             let weighted_input_val = current_spike_vec.dot(&layer.input_weights);
 
             // per ogni neurone, attivo la funzione handle_spike coi suoi parametri e le sue variabili, 
@@ -147,7 +149,7 @@ impl<M: Model> Solver<M> {
             }
 
             //aggiorna la spike di input corrente con il vettore di spike appena creato
-            println!("EEE OOOOO O OO O O  {:?}\n\n STTTOOOOP", current_spike_vec);
+           // println!("current_spike_vec {:?}\n\n STTTOOOOP", current_spike_vec);
             current_spike_vec =  Array2::from_shape_vec([1, output_vec.len()], output_vec.clone()).unwrap();
 
             /*una volta che il layer ha elaborato l'input, bisogna simulare 
@@ -155,6 +157,9 @@ impl<M: Model> Solver<M> {
 
             //Svuota il vettore che tiene le spike generate dai vari neuroni
             // e lo prepara per la prossima iterazione sui layer
+
+            //TODO fare un check che sia l'ultimo layer cosi non si chiama per ogni layer ma solo sull'ultimo
+            out_spikes = to_u128_vec(&output_vec, ts);  
             output_vec.clear();
 
             //creo il vettore dei valori di input per i neuroni ricevuti dal neurone dello stesso layer che ha fatto la spike, tramite prodotto vec x mat
@@ -173,15 +178,16 @@ impl<M: Model> Solver<M> {
             }
         }
 
-        out_spikes = to_u128_vec(&output_vec, ts);
+        //println!("out_spikes {:?}\n\n STTTOOOOP", out_spikes);
         out_spikes
+        
 
 
     }
 
     //TODO CERCARE DI UNIRE QUESTA FUNZIONE ALLA INFER_SPIKE
 
-    fn apply_spike_to_input_layer_neuron(
+    /*fn apply_spike_to_input_layer_neuron(
                                 neuron_id: usize, 
                                 ts: u128, 
                                 network: &NN<M>, 
@@ -225,7 +231,7 @@ impl<M: Model> Solver<M> {
         }
         
         return arr_spike;
-    }
+    }*/
 
 
 
