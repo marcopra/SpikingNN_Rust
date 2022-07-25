@@ -82,9 +82,9 @@ impl<M: Model> Solver<M> {
         let mut sim_layer: Vec<SimulatedNeuron<M>>;
 
         for layer in network.layers.iter() {
-            sim_layer = Vec::with_capacity(layer.0.len());
+            sim_layer = Vec::with_capacity(layer.neurons.len());
 
-            for neuron in layer.0.iter() {
+            for neuron in layer.neurons.iter() {
                 sim_neuron = SimulatedNeuron::new();
                 sim_layer.push(sim_neuron);
             }
@@ -123,7 +123,7 @@ impl<M: Model> Solver<M> {
             // qui current_spike_vec è qualcosa del tipo [0 1 0 0 0]' oppure  [ 0 1 0 0 1] ed
             // è generato dal layer precedente.
             //creo il vettore dei valori di input per i neuroni ricevuti dal layer precedente, tramite prodotto vec x mat
-            let weighted_input_val = current_spike_vec.dot(&layer.inter_weigth_matrix);
+            let weighted_input_val = current_spike_vec.dot(&layer.input_weights);
 
 
             // per ogni neurone, attivo la funzione handle_spike coi suoi parametri e le sue variabili, 
@@ -146,7 +146,7 @@ impl<M: Model> Solver<M> {
             le spike che arrivano ai neuroni dello stesso strato usando il nuovo current_spike_vec aggiornato*/
 
             //creo il vettore dei valori di input per i neuroni ricevuti dal neurone dello stesso layer che ha fatto la spike, tramite prodotto vec x mat
-            let intra_layer_input_val = current_spike_vec.dot((&layer.intra_weigth_matrix));
+            let intra_layer_input_val = current_spike_vec.dot(&layer.intra_weights);
 
             // per ogni neurone, attivo la funzione handle_spike coi suoi parametri e le sue variabili, 
             // prese dai vettori inizializzati precedentemente
@@ -178,7 +178,7 @@ impl<M: Model> Solver<M> {
         let n_neurons_layer0 = network.layers[0].neurons.len();
 
         //input val for neuron_id-th neuron is 1 times the corresponding input_weight
-        let weighted_input_val: f64 = network.input_weights[neuron_id];  
+        let weighted_input_val: f64 = network.layers[0].input_weights[(0, neuron_id)];  
 
         //Obtain the neuron_id-th neuron (parameters and variables) from the input layer 
         let neuron_params = &network.layers[0].neurons[neuron_id];
@@ -190,9 +190,9 @@ impl<M: Model> Solver<M> {
         //vettore con un solo elemento a 1 in posizione neuro_id-esima
         let mut vec_spike: Vec<f64> = Vec::new();
         
-        let arr_spike = Solver::single_spike_to_vec(neuron_id, n_neurons_layer0);
+        let arr_spike = Solver::<M>::single_spike_to_vec(neuron_id, n_neurons_layer0);
 
-        let intra_layer_weights = &network.layers[0].intra_weights_matrix;
+        let intra_layer_weights = &network.layers[0].intra_weights;
         
         //Vettore di valori da dare agli altri neuroni dello stesso layer
         let intra_layer_weighted_val = arr_spike.dot(intra_layer_weights);

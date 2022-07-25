@@ -27,4 +27,12 @@ pub trait Model {
 pub trait RefInto<T> { }
 impl<T, U> RefInto<T> for U where for<'a> &'a U: Into<T> { }
 
-pub(super) type Layer<M> = (Vec<<M as Model>::Neuron>, Array2<f64>);
+#[derive(Clone)]
+pub(crate) struct Layer<M: Model> {
+    /// List of all neurons in this layer
+    pub neurons: Vec<M::Neuron>,
+    /// Matrix of the input weights. For the first layer, this must be a row vector.
+    pub input_weights: Array2<f64>,
+    /// Square matrix of the intra-layer weights
+    pub intra_weights: Array2<f64>
+}

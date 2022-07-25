@@ -13,6 +13,8 @@ use std::{marker::PhantomData, borrow::Borrow, fmt::Debug};
 use ndarray::Array2;
 use thiserror::Error;
 use crate::{NN, Model};
+
+use super::model::Layer;
 pub trait Dim: Copy { }
 
 #[derive(Clone, Copy)]
@@ -94,13 +96,13 @@ impl<M: Model> NNBuilder<M, Dynamic> {
     /// Note: input and intra weights are flattened row-major matrices (one row for each neuron in the layer).
     pub fn layer(
         mut self,
-        layer: impl Borrow<[M::Neuron]>,
+        neurons: impl Borrow<[M::Neuron]>,
         input_weights: impl Borrow<[f64]>,
         intra_weights: impl Borrow<[f64]>
     ) -> Result<Self, DynamicBuilderError<M>>
     {
-        let len_last_layer = self.nn.layers.last().map(|(l, _)| l.len()).unwrap_or(0);
-        let n = layer.borrow().len();
+        let len_last_layer = self.nn.layers.last().map(|l| l.neurons.len()).unwrap_or(0);
+        let n = neurons.borrow().len();
         
         // Check layer len not zero
         if n == 0 {
@@ -119,14 +121,13 @@ impl<M: Model> NNBuilder<M, Dynamic> {
         }
 
         // Finally, insert layer into nn
-        self.nn.layers.push((layer.borrow().to_vec(), Array2::from_shape_vec((n, n), intra_weights.borrow().to_vec()).unwrap()));
+        let new_layer = Layer {
+            neurons: neurons.borrow().to_vec(),
+            input_weights: Array2::from_shape_vec((len_last_layer.max(1), n), input_weights.borrow().to_vec()).unwrap(),
+            intra_weights: Array2::from_shape_vec((n, n), intra_weights.borrow().to_vec()).unwrap()
+        };
+        self.nn.layers.push(new_layer);
 
-        if len_last_layer == 0 {
-            self.nn.input_weights = input_weights.borrow().to_vec();
-        } else {
-            self.nn.synapses.push(Array2::from_shape_vec((len_last_layer, n), input_weights.borrow().to_vec()).unwrap());
-        }
-        
         Ok(self)
     }
 
@@ -155,16 +156,17 @@ impl<M: Model> NNBuilder<M, Zero> {
     /// Note: diagonal intra-weights (i.e. from and to the same neuron) are ignored.
     pub fn layer<const N: usize>(
         mut self,
-        layer: impl Borrow<[M::Neuron; N]>,
+        neurons: impl Borrow<[M::Neuron; N]>,
         input_weights: impl Borrow<[f64; N]>,
         intra_weights: impl Borrow<[[f64; N]; N]>
     ) -> NNBuilder<M, NotZero<N>>
     {
-        // Insert input weights
-        self.nn.input_weights = input_weights.borrow().to_vec();
-
-        // Insert layer
-        self.nn.layers.push((layer.borrow().to_vec(), Array2::from_shape_vec((N, N), intra_weights.borrow().iter().flatten().cloned().collect()).unwrap()));
+        let new_layer = Layer {
+            neurons: neurons.borrow().to_vec(),
+            input_weights: Array2::from_shape_vec((1, N), input_weights.borrow().to_vec()).unwrap(),
+            intra_weights: Array2::from_shape_vec((N, N), intra_weights.borrow().iter().flatten().cloned().collect()).unwrap()
+        };
+        self.nn.layers.push(new_layer);
         
         self.morph()
     }
@@ -176,17 +178,18 @@ impl<M: Model, const LEN_LAST_LAYER: usize> NNBuilder<M, NotZero<LEN_LAST_LAYER>
     /// Note: diagonal intra-weights (i.e. from and to the same neuron) are ignored.
     pub fn layer<const N: usize>(
         mut self,
-        layer: impl Borrow<[M::Neuron; N]>,
+        neurons: impl Borrow<[M::Neuron; N]>,
         input_weights: impl Borrow<[[f64; N]; LEN_LAST_LAYER]>,
         intra_weights: impl Borrow<[[f64; N]; N]>
     ) -> NNBuilder<M, NotZero<N>>
     {
-        // Insert layer
-        self.nn.layers.push((layer.borrow().to_vec(), Array2::from_shape_vec((N, N), intra_weights.borrow().iter().flatten().cloned().collect()).unwrap()));
-
-        // Insert input synapse mesh
-        self.nn.synapses.push(Array2::from_shape_vec((LEN_LAST_LAYER, N), input_weights.borrow().iter().flatten().cloned().collect()).unwrap());
-
+        let new_layer = Layer {
+            neurons: neurons.borrow().to_vec(),
+            input_weights: Array2::from_shape_vec((LEN_LAST_LAYER, N), input_weights.borrow().iter().flatten().cloned().collect()).unwrap(),
+            intra_weights: Array2::from_shape_vec((N, N), intra_weights.borrow().iter().flatten().cloned().collect()).unwrap()
+        };
+        self.nn.layers.push(new_layer);
+        
         self.morph()
     }
 
@@ -200,9 +203,7 @@ impl<M: Model, D: Dim> NNBuilder<M, D> {
     /// Create a new, empty `NN`
     fn new_nn() -> NN<M> {
         NN {
-            input_weights: vec![],
-            layers: vec![],
-            synapses: vec![]
+            layers: vec![]
         }
     }
 
@@ -235,10 +236,7 @@ impl<M: Model> Debug for NNBuilder<M, Dynamic> {
 //TODO 
 #[cfg(test)]
 mod tests {
-    use crate::sync::NeuronToken;
-    use crate::{NN, NNBuilder, LifNeuron, LifNeuronConfig};
-    use crate::nn::Model;
-
+    use crate::{LifNeuron, LifNeuronConfig};
 
     #[test]
     fn test_building_new_NN() {

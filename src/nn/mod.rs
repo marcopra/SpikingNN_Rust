@@ -1,4 +1,4 @@
-use ndarray::{Array2, Array1, OwnedRepr, Array, Dim, ArrayBase};
+use ndarray::{Array2, Array1};
 
 use crate::{Model, sync::LayerManager};
 
@@ -107,13 +107,8 @@ impl fmt::Display for Spike {
 /// A neural network is stimulated by `Spike`s applied to the `Neuron`s of the entry layer.
 #[derive(Clone)]
 pub struct NN<M: Model> {
-    /// Input weight for each of the `Neuron`s in the entry layer
-    input_weights: Vec<f64>,
-    /// All the layers of the neural network. Every layer contains the list of its `Neuron`s and
-    /// a square `Matrix` for the intra-layer weights.
-    layers: Vec<Layer<M>>,
-    /// Vec of `Synapse` meshes between each consecutive pair of layers
-    synapses: Vec<Array2<f64>>
+    /// All the sorted layers of the neural network
+    layers: Vec<Layer<M>>
 }
 
 // I need to explicitly request RefInto<SolverVars> for Neuron because of a limitation in the Rust compiler with respect
@@ -125,7 +120,7 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
         // These will be respectively the first layer's sender and the last layer's receiver
         let (sender, mut receiver) = channel();
         
-        for (i, (neurons, synapses_intra)) in self.layers.iter().skip(1).enumerate() {
+        for Layer {neurons, input_weights, intra_weights} in self.layers.iter().skip(1) {
             let (layer_sender, layer_receiver) = channel();
             
             // Create the LayerManager for this layer
@@ -133,8 +128,8 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
                 neurons.len(),
                 replace(&mut receiver, layer_receiver),
                 layer_sender,
-                &self.synapses[i],
-                synapses_intra
+                input_weights,
+                intra_weights
             );
 
             // We're gonna share mngr with multiple threads. Since I know the threads will live less than
@@ -163,7 +158,7 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
         {
             // Note that any nn will have at least one layer. Always.
             // Generate SolverVars for each neuron
-            let mut layer = self.layers[0].0.iter()
+            let mut layer = self.layers[0].neurons.iter()
                 .map(|neuron| (neuron, neuron.into()))
                 .collect::<Vec<(_, M::SolverVars)>>();
 
@@ -186,7 +181,7 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
                     );
                     if spiked {
                         sender.send((cur_ts, output.clone())).unwrap();
-                        intra_inputs = Some((output.dot(&self.layers[0].1)).row(0).to_owned());
+                        intra_inputs = Some((output.dot(&self.layers[0].intra_weights)).row(0).to_owned());
                     }
                 } else {
                     // Get the next spike from the input spikes
@@ -195,11 +190,11 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
                             cur_ts = ts;
                             
                             // Apply the spike
-                            let output = M::handle_spike(layer[neuron_id].0, &mut layer[neuron_id].1, self.input_weights[neuron_id], ts);
+                            let output = M::handle_spike(layer[neuron_id].0, &mut layer[neuron_id].1, self.layers[0].input_weights[(0, neuron_id)], ts);
                             if output > 0.5 { // TODO: do we really want this?
                                 // Neuron spiked, send spike to next layer and enqueue intra-spikes
                                 sender.send((ts, Array2::from_shape_fn((1, layer.len()), |(_, i)| if i == neuron_id { output } else { 0.0 }))).unwrap();
-                                intra_inputs = Some(self.layers[0].1.row(neuron_id).to_owned() * output);
+                                intra_inputs = Some(self.layers[0].intra_weights.row(neuron_id).to_owned() * output);
                             }
                         },
                         None => break
