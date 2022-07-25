@@ -10,7 +10,7 @@
 // TODO: intra-weights square matrix? Should we request a Nx(N-1) matrix to dismiss the useless self weight?
 
 use std::{marker::PhantomData, borrow::Borrow, fmt::Debug};
-use ndarray::Array2;
+use ndarray::{Array2, Array1};
 use thiserror::Error;
 use crate::{NN, Model};
 
@@ -120,10 +120,16 @@ impl<M: Model> NNBuilder<M, Dynamic> {
             return Err(DynamicBuilderError::InvalidSizes(self));
         }
 
+        let input_weights = if len_last_layer == 0 {
+            Array2::from_diag(&Array1::from_vec(input_weights.borrow().to_vec()))
+        } else {
+            Array2::from_shape_vec((len_last_layer, n), input_weights.borrow().to_vec()).unwrap()
+        };
+
         // Finally, insert layer into nn
         let new_layer = Layer {
             neurons: neurons.borrow().to_vec(),
-            input_weights: Array2::from_shape_vec((len_last_layer.max(1), n), input_weights.borrow().to_vec()).unwrap(),
+            input_weights,
             intra_weights: Array2::from_shape_vec((n, n), intra_weights.borrow().to_vec()).unwrap()
         };
         self.nn.layers.push(new_layer);
@@ -163,7 +169,7 @@ impl<M: Model> NNBuilder<M, Zero> {
     {
         let new_layer = Layer {
             neurons: neurons.borrow().to_vec(),
-            input_weights: Array2::from_shape_vec((1, N), input_weights.borrow().to_vec()).unwrap(),
+            input_weights: Array2::from_diag(&Array1::from_vec(input_weights.borrow().to_vec())),
             intra_weights: Array2::from_shape_vec((N, N), intra_weights.borrow().iter().flatten().cloned().collect()).unwrap()
         };
         self.nn.layers.push(new_layer);
