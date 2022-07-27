@@ -15,3 +15,4 @@ rand_pcg = "0.3.1"
 
 [features]
 bench = []
+per_neuron_parallelism = []

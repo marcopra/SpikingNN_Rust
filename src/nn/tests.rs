@@ -166,7 +166,7 @@ fn test_solve_nn2() {
     ]);
 
     let output = nn.solve(spikes.clone());
-    println!("OUTPUT MULTI THREAD: {:?}", output);
+    println!("OUTPUT MULTI THREAD: {:?}", output); // [[8], [6]]
 
     let mut single_solver = Solver::new(spikes, nn);
     let output2 = single_solver.solve();
@@ -291,28 +291,28 @@ mod benches {
         b.iter(|| black_box(nn.solve(spikes.clone())));
     }
 
-    #[bench]
-    fn bench_huge_single(b: &mut Bencher) {
-        let (nn, spikes) = create_random_lif_nn(
-            3546846,
-            1500.try_into().unwrap(),
-            50.try_into().unwrap()..80.try_into().unwrap(),
-            500
-        );
-        let mut solver = Solver::new(spikes, nn);
+    // #[bench]
+    // fn bench_huge_single(b: &mut Bencher) {
+    //     let (nn, spikes) = create_random_lif_nn(
+    //         3546846,
+    //         1500.try_into().unwrap(),
+    //         50.try_into().unwrap()..80.try_into().unwrap(),
+    //         500
+    //     );
+    //     let mut solver = Solver::new(spikes, nn);
     
-        b.iter(|| black_box(solver.solve()));
-    }
+    //     b.iter(|| black_box(solver.solve()));
+    // }
 
-    #[bench]
-    fn bench_huge_multi(b: &mut Bencher) {
-        let (nn, spikes) = create_random_lif_nn(
-            3546846,
-            1500.try_into().unwrap(),
-            50.try_into().unwrap()..80.try_into().unwrap(),
-            500
-        );
+    // #[bench]
+    // fn bench_huge_multi(b: &mut Bencher) {
+    //     let (nn, spikes) = create_random_lif_nn(
+    //         3546846,
+    //         1500.try_into().unwrap(),
+    //         50.try_into().unwrap()..80.try_into().unwrap(),
+    //         500
+    //     );
 
-        b.iter(|| black_box(nn.solve(spikes.clone())));
-    }
+    //     b.iter(|| black_box(nn.solve(spikes.clone())));
+    // }
 }
