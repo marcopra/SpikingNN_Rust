@@ -63,7 +63,7 @@ impl<'a> LayerManager<'a> {
                 synapses_input,
                 synapses_intra,
                 barrier: ProgrammableBarrier::new(num_neurons),
-                cur: UnsafeCell::new((Default::default(), Array2::from_elem((1, num_neurons), Default::default()))),
+                cur: UnsafeCell::new((Default::default(), Array2::zeros((1, num_neurons)))),
                 id: layer_manager_id,
                 spiked: false.into()
             },
@@ -77,6 +77,9 @@ impl<'a> LayerManager<'a> {
     /// on this interface, and the neuron must finish, otherwise the contained value
     /// is the tuple with timestamp of the spike and weighted input for the specific neuron.
     pub fn next(&self, token: &NeuronToken) -> Option<(u128, f64)> {
+        // Token valid?
+        assert_eq!(token.layer_manager_id, self.id, "Used invalid token for LayerManager");
+        
         self.barrier.wait(|| {
             // Check if any neuron spiked during this time slot
             if self.spiked.fetch_and(false, Ordering::SeqCst) {
@@ -108,9 +111,7 @@ impl<'a> LayerManager<'a> {
     /// Commit the result of the previous spike by the 
     pub fn commit(&self, token: &NeuronToken, spiked: bool, val: f64) {
         // Token valid?
-        if token.layer_manager_id != self.id {
-            panic!("Used invalid token for LayerManager");
-        }
+        assert_eq!(token.layer_manager_id, self.id, "Used invalid token for LayerManager");
 
         // Update spiked flag
         self.spiked.fetch_or(spiked, Ordering::SeqCst); // TODO: Can we relax this ordering? (probably)

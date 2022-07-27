@@ -1,4 +1,3 @@
-
 use crate::{nn::{Spike, NN}, Model};
 use ndarray::{Array2, OwnedRepr, ArrayBase, Dim};
 
@@ -26,7 +25,6 @@ struct SimulatedNN<M: Model> {
 }
 
 impl<M: Model> SimulatedNN<M> {
-
     fn new() -> Self{
         Self { 
             layers: Vec::new(),

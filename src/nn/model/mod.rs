@@ -1,9 +1,11 @@
 pub mod lif;
 
+use std::fmt::Debug;
+
 use ndarray::Array2;
 
 /// An applicable model for spiking neural networks
-pub trait Model {
+pub trait Model: Debug {
     /// A struct for a single Neuron of the SNN.
     /// Each Neuron has its own parameters such as _current membrane tension_, _threshold tension_ etc...
     type Neuron: 'static + Sized + Clone + Sync + RefInto<Self::SolverVars>;

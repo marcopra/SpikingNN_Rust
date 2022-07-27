@@ -1,13 +1,16 @@
-use ndarray::{Array2, ArrayBase, OwnedRepr, Dim};
+use ndarray::Array2;
 
 use crate::{Model, sync::LayerManager};
 
 use self::model::Layer;
-use std::{fmt, sync::{Arc, mpsc::channel}, mem::replace, thread, intrinsics::transmute, ops::Range};
+use std::{fmt, sync::{Arc, mpsc::channel}, mem::replace, thread, intrinsics::transmute};
 
 pub mod model;
 pub(crate) mod builder;
 pub(crate) mod solver_v1;
+
+#[cfg(test)]
+mod tests;
 
 /// Represents the 'spike' that stimulates a neuron in a spiking neural network.
 ///  
@@ -134,7 +137,7 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
             );
 
             // We're gonna share mngr with multiple threads. Since I know the threads will live less than
-            // the lifetime 'a of the LayerManager<'a>, I can use some unsafe to allow this.
+            // the lifetime 'a of the LayerManager<'a> (which is the lifetime of self), I can use some unsafe to allow this.
             let mngr = Arc::new(unsafe { transmute::<_, LayerManager<'_>>(mngr) });
 
             // Create a new thread for each neuron of the layer
@@ -185,112 +188,3 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
         res
     }
 }
-
-
-fn rand_matrix(dim: &[usize;2] , range: Range<usize>) ->  ArrayBase<OwnedRepr<f64>, Dim<[usize;2] >>{
-    
-    todo!();
-    let matrix: ArrayBase<OwnedRepr<f64>, Dim<[usize;2] >> ;
-    matrix
-}
-
-#[cfg(test)]
-mod tests {
-    use std::ops::Range;
-
-    use crate::{nn::{Spike, solver_v1::Solver}, NNBuilder, LeakyIntegrateFire, LifNeuronConfig};
-
-    use super::rand_matrix;
-    
-    #[test]
-    fn test_spike_vec_for(){
-        
-    }
-
-    #[test]
-    fn test_sort_spike(){
-
-        let ts1 = [0, 1, 4, 5].to_vec();
-        let ts2 = [0, 3, 6, 7].to_vec();
-        let mut multiple_spike_vec : Vec<Vec<Spike>> = Vec::new();
-        
-        let spike1 = Spike::spike_vec_for(1, ts1);
-        let spike2 = Spike::spike_vec_for(2, ts2);
-
-        multiple_spike_vec.push(spike1);
-        multiple_spike_vec.push(spike2);
-
-        let input_vec = Spike::create_terminal_vec(multiple_spike_vec);
-
-        for el in input_vec.iter(){
-            println!("{:?}", el);
-        }
-    }
-
-    #[test]
-    fn test_create_terminal_vec(){
-
-        let spikes_neuron_1 = [11, 9, 23, 43, 42].to_vec();
-        let spike_vec_for_neuron_1 = Spike::spike_vec_for(1, spikes_neuron_1 );
-        
-        let spikes_neuron_2 = [1, 29, 3, 11, 22].to_vec();
-        let spike_vec_for_neuron_2 = Spike::spike_vec_for(2, spikes_neuron_2 );
-        
-        let spikes: Vec<Vec<Spike>> = [spike_vec_for_neuron_1, 
-                                           spike_vec_for_neuron_2].to_vec();
-        
-        let sorted_spike_array_for_nn: Vec<Spike> = Spike::create_terminal_vec(spikes);
-        println!("{:?}", sorted_spike_array_for_nn);
-    }
-
-    #[test]
-    fn test_solve_nn() {
-        // Create a stupidly simple NN
-        let cfg = LifNeuronConfig::new(1.0, 0.5, 2.0, 1.0);
-        let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
-            .layer(
-                [From::from(&cfg), From::from(&cfg)],
-                [1.2, 2.3],
-                [[0.0, -0.8], [-0.6, 0.0]]
-            )
-            .layer(
-                [From::from(&cfg), From::from(&cfg), From::from(&cfg)],
-                [
-                    [1.5, 1.2, 1.6],
-                    [1.2, 1.4, 1.4]
-                ],
-                [
-                    [0.0, -0.4, -0.3],
-                    [-0.5, 0.0, -0.5],
-                    [-0.8, -0.4, 0.0]
-                ]
-            )
-            .build();
-
-        // Create some input spikes
-        let spikes = Spike::create_terminal_vec(vec![
-            Spike::spike_vec_for(0, vec![0, 1, 4, 6, 8, 10, 14]),
-            Spike::spike_vec_for(1, vec![2, 3, 5, 7, 11, 20]) // No simultaneous spikes
-        ]);
-
-        let output = nn.solve(spikes.clone());
-        println!("\n\nOUTPUT MULTI THREAD: {:?}", output); // [[0, 2, 5, 7, 10, 14, 20], [0, 2, 5, 7, 10, 14, 20], [0, 1, 2, 5, 6, 7, 10, 14, 20]]
-
-        println!("Then ------------------------------------");
-        let mut single_solver = Solver::new(spikes, nn);
-        let second_output = single_solver.solve();
-
-        println!("\n\nOUTPUT SINGLE THREAD: {:?}", second_output);
-    }
-
-    fn test_random_matrix(){
-
-        //TODO @marcopra
-        let dim: [usize; 2] = [2,3];
-        let range: Range<usize> = 0..2;
-        let matrix = rand_matrix(&dim, range);
-        // 2 righe 3 colonne e con numeri randomici che vanno tra 0 e 2 
-        //e se non specificato tra 0 e 1 (vedi se si può fare)
-    }
-}
-

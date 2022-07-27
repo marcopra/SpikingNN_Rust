@@ -126,9 +126,9 @@ impl Model for LeakyIntegrateFire {
 
             //TODO change return...
             //Fire Spike
-            return 1. ;
+            1. 
         } else {
-            return 0.;
+            0.
         }
     }
 

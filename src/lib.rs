@@ -1,3 +1,6 @@
+// Benchmarks can be run with `cargo +nightly bench --features bench`
+#![cfg_attr(feature = "bench", feature(test))]
+
 mod nn;
 mod sync;
 
