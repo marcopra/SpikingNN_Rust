@@ -113,8 +113,10 @@ impl Model for LeakyIntegrateFire {
     /// After this code, the neuron may possibly have fired the spike.
     
     //TODO Cambiare da Option<Spike> a 1 o 0 per uso interno per andare a creare il vettore di output da moltiplicare con la matrice
-    fn handle_spike(neuron: &LifNeuron, vars: &mut LifSolverVars, weighted_input_val: f64, ts: u128) -> f64
-    {
+    fn handle_spike(neuron: &LifNeuron, vars: &mut LifSolverVars, weighted_input_val: f64, ts: u128) -> f64 {
+        // This early exit serves as a small optimization
+        if weighted_input_val == 0.0 { return 0.0 }
+        
         let delta_t: f64 = (ts - vars.ts_old) as f64;
         vars.ts_old = ts;
 

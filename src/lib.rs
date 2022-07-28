@@ -3,11 +3,11 @@
 
 mod nn;
 
-#[cfg(feature = "per_neuron_parallelism")]
+#[cfg(feature = "per-neuron-parallelism")]
 mod sync_per_neuron;
-#[cfg(feature = "per_neuron_parallelism")]
+#[cfg(feature = "per-neuron-parallelism")]
 use sync_per_neuron as sync;
-#[cfg(not(feature = "per_neuron_parallelism"))]
+#[cfg(not(feature = "per-neuron-parallelism"))]
 mod sync;
 
 // Re-exports

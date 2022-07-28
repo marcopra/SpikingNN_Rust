@@ -8,11 +8,15 @@ edition = "2021"
 [dependencies]
 thiserror = "1.0"
 ndarray = "0.15.4"
+tokio = {version = "1.20.1", features = ["rt", "sync"], optional = true}
 
 [dev-dependencies]
 rand = "0.8.5"
 rand_pcg = "0.3.1"
+tokio = {version = "1.20.1", features = ["rt", "sync", "rt-multi-thread", "macros"]}
 
 [features]
+default = ["async"]
 bench = []
-per_neuron_parallelism = []
+per-neuron-parallelism = []
+async = ["dep:tokio"]
