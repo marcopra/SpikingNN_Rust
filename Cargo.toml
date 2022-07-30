@@ -19,7 +19,6 @@ tokio = { version = "1.20.1", features = ["rt", "sync", "rt-multi-thread", "macr
 [features]
 default = ["async", "simd"]
 bench = []
-per-neuron-parallelism = []
 async = ["dep:tokio"]
 simd = ["dep:packed_simd"]
 
