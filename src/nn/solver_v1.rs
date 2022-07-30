@@ -69,7 +69,16 @@ where for <'a> &'a M::Neuron: Into<M::SolverVars> {
         
             nn_output.push(res);
         }
-        nn_output
+        // nn_output
+
+        // miolad: changed return format to be compatible with parallel solver
+        let mut output = vec![vec![]; self.network.layers.last().unwrap().neurons.len()];
+        for spike in nn_output {
+            for (neuron_id, ts) in spike.into_iter().enumerate().filter(|(_, v)| *v != u128::MAX) {
+                output[neuron_id].push(ts);
+            }
+        }
+        output
     }
 
     /// _*--> (Internal Use Only)*_
@@ -348,7 +357,7 @@ where for <'a> &'a M::Neuron: Into<M::SolverVars> {
         for &val in vec.iter(){
 
             if val > 0.0 { res.push(val_to_set)}
-            else {res.push(999_u128)};
+            else {res.push(u128::MAX)};
         }   
         res 
     }

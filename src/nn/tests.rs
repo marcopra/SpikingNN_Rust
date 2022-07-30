@@ -88,125 +88,144 @@ fn test_create_terminal_vec(){
     println!("{:?}", sorted_spike_array_for_nn);
 }
 
+#[cfg(not(feature = "async"))]
+#[test]
+fn test_tiny_sync() {
+    let (nn, spikes) = create_random_lif_nn(
+        8436798,
+        3.try_into().unwrap(),
+        1.try_into().unwrap()..3.try_into().unwrap(),
+        5
+    );
+
+    let mut solver = Solver::new(spikes.clone(), nn.clone());
+    assert_eq!(solver.solve(), nn.solve(spikes));
+}
+
 #[cfg(feature = "async")]
 #[tokio::test]
-async fn test_solve_nn() {
-    // Create a stupidly simple NN
-    let cfg = LifNeuronConfig::new(1.0, 0.5, 2.0, 1.0);
-    let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
-        .layer(
-            [From::from(&cfg), From::from(&cfg)],
-            [1.2, 2.3],
-            [[0.0, -0.8], [-0.6, 0.0]]
-        )
-        .layer(
-            [From::from(&cfg), From::from(&cfg), From::from(&cfg)],
-            [
-                [1.5, 1.2, 1.6],
-                [1.2, 1.4, 1.4]
-            ],
-            [
-                [0.0, -0.4, -0.3],
-                [-0.5, 0.0, -0.5],
-                [-0.8, -0.4, 0.0]
-            ]
-        )
-        .build();
-
-    // Create some input spikes
-    let spikes = Spike::create_terminal_vec(vec![
-        Spike::spike_vec_for(0, vec![0, 1, 4, 6, 8, 10, 14]),
-        Spike::spike_vec_for(1, vec![2, 3, 5, 7, 11, 20]) // No simultaneous spikes
-    ]);
-
-    let output = nn.solve(spikes.clone()).await;
-    println!("\n\nOUTPUT MULTI THREAD: {:?}", output); // [[0, 2, 5, 7, 10, 14, 20], [0, 2, 5, 7, 10, 14, 20], [0, 1, 2, 5, 6, 7, 10, 14, 20]]
-
-    println!("Then ------------------------------------");
-    let mut single_solver = Solver::new(spikes, nn);
-    let second_output = single_solver.solve();
-
-    println!("\n\nOUTPUT SINGLE THREAD: {:?}", second_output);
-}
-
-#[cfg(not(feature = "async"))]
-#[test]
-fn test_solve_nn2() {
-    let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
-        .layer(
-            [
-                From::from(&LifNeuronConfig::new(2., 0.5, 3., 1.6)),
-                From::from(&LifNeuronConfig::new(1.5, 0.4, 3.1, 1.2)),
-                From::from(&LifNeuronConfig::new(1.6, 0.3, 2.8, 1.1))
-            ],
-            [1.1, 1.2, 1.1],
-            [
-                [0.0, -0.1, -0.2],
-                [-0.15, 0.0, -0.1],
-                [-0.2, -0.15, 0.0]
-            ]
-        )
-        .layer(
-            [
-                From::from(&LifNeuronConfig::new(1.8, 0.5, 2.8, 1.5)),
-                From::from(&LifNeuronConfig::new(1.7, 0.8, 2.6, 1.6))
-            ],
-            [
-                [0.9, 0.85],
-                [0.8, 0.9],
-                [0.85, 0.7]
-            ],
-            [
-                [0.0, -0.2],
-                [-0.15, 0.0]
-            ]
-        )
-        .build();
-    
-    let spikes = Spike::create_terminal_vec(vec![
-        Spike::spike_vec_for(0, vec![2, 5, 6, 10]),
-        Spike::spike_vec_for(1, vec![3, 7, 8, 10]),
-        Spike::spike_vec_for(2, vec![4, 9, 12])
-    ]);
-
-    let output = nn.solve(spikes.clone());
-    println!("OUTPUT MULTI THREAD: {:?}", output); // [[8], [6]]
-
-    let mut single_solver = Solver::new(spikes, nn);
-    let output2 = single_solver.solve();
-    println!("OUTPUT SINGLE THREAD: {:?}", output2);
-}
-
-#[cfg(not(feature = "async"))]
-#[test]
-fn test_random_nn() {
+async fn test_tiny_async() {
     let (nn, spikes) = create_random_lif_nn(
-        53278,
-        10.try_into().unwrap(),
-        3.try_into().unwrap()..10.try_into().unwrap(),
-        10
+        8436798,
+        3.try_into().unwrap(),
+        1.try_into().unwrap()..3.try_into().unwrap(),
+        5
     );
-    println!("{:?}", nn.solve(spikes));
+
+    let mut solver = Solver::new(spikes.clone(), nn.clone());
+    assert_eq!(solver.solve(), nn.solve(spikes).await);
+}
+
+#[cfg(not(feature = "async"))]
+#[test]
+fn test_small_sync() {
+    let (nn, spikes) = create_random_lif_nn(
+        498247,
+        15.try_into().unwrap(),
+        4.try_into().unwrap()..12.try_into().unwrap(),
+        25
+    );
+
+    let mut solver = Solver::new(spikes.clone(), nn.clone());
+    assert_eq!(solver.solve(), nn.solve(spikes));
 }
 
 #[cfg(feature = "async")]
-#[test]
-fn test_huge_async() {
-    use tokio::runtime::Builder;
-    
-    let runtime = Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    
-        let (nn, spikes) = create_random_lif_nn(
-            3546846,
-            1500.try_into().unwrap(),
-            50.try_into().unwrap()..80.try_into().unwrap(),
-            500
-        );
+#[tokio::test]
+async fn test_small_async() {
+    let (nn, spikes) = create_random_lif_nn(
+        498247,
+        15.try_into().unwrap(),
+        4.try_into().unwrap()..12.try_into().unwrap(),
+        25
+    );
 
-    println!("{:?}", runtime.block_on(nn.solve(spikes)));
+    let mut solver = Solver::new(spikes.clone(), nn.clone());
+    assert_eq!(solver.solve(), nn.solve(spikes).await);
+}
+
+#[cfg(not(feature = "async"))]
+#[test]
+fn test_medium_sync() {
+    let (nn, spikes) = create_random_lif_nn(
+        543513,
+        50.try_into().unwrap(),
+        10.try_into().unwrap()..20.try_into().unwrap(),
+        75
+    );
+
+    let mut solver = Solver::new(spikes.clone(), nn.clone());
+    assert_eq!(solver.solve(), nn.solve(spikes));
+}
+
+#[cfg(feature = "async")]
+#[tokio::test]
+async fn test_medium_async() {
+    let (nn, spikes) = create_random_lif_nn(
+        543513,
+        50.try_into().unwrap(),
+        10.try_into().unwrap()..20.try_into().unwrap(),
+        75
+    );
+
+    let mut solver = Solver::new(spikes.clone(), nn.clone());
+    assert_eq!(solver.solve(), nn.solve(spikes).await);
+}
+
+#[cfg(not(feature = "async"))]
+#[test]
+fn test_big_sync() {
+    let (nn, spikes) = create_random_lif_nn(
+        136415635468,
+        200.try_into().unwrap(),
+        20.try_into().unwrap()..35.try_into().unwrap(),
+        350
+    );
+
+    let mut solver = Solver::new(spikes.clone(), nn.clone());
+    assert_eq!(solver.solve(), nn.solve(spikes));
+}
+
+#[cfg(feature = "async")]
+#[tokio::test]
+async fn test_big_async() {
+    let (nn, spikes) = create_random_lif_nn(
+        136415635468,
+        200.try_into().unwrap(),
+        20.try_into().unwrap()..35.try_into().unwrap(),
+        350
+    );
+
+    let mut solver = Solver::new(spikes.clone(), nn.clone());
+    assert_eq!(solver.solve(), nn.solve(spikes).await);
+}
+
+#[cfg(not(feature = "async"))]
+#[test]
+fn test_huge_sync() {
+    let (nn, spikes) = create_random_lif_nn(
+        3546846,
+        1500.try_into().unwrap(),
+        50.try_into().unwrap()..80.try_into().unwrap(),
+        500
+    );
+
+    let mut solver = Solver::new(spikes.clone(), nn.clone());
+    assert_eq!(solver.solve(), nn.solve(spikes));
+}
+
+#[cfg(feature = "async")]
+#[tokio::test]
+async fn test_huge_async() {
+    let (nn, spikes) = create_random_lif_nn(
+        3546846,
+        1500.try_into().unwrap(),
+        50.try_into().unwrap()..80.try_into().unwrap(),
+        500
+    );
+
+    let mut solver = Solver::new(spikes.clone(), nn.clone());
+    assert_eq!(solver.solve(), nn.solve(spikes).await);
 }
 
 #[cfg(feature = "bench")]
@@ -393,47 +412,47 @@ mod benches {
         b.iter(|| runtime.block_on(black_box(nn.solve(spikes.clone()))));
     }
 
-    // #[bench]
-    // fn bench_huge_single(b: &mut Bencher) {
-    //     let (nn, spikes) = create_random_lif_nn(
-    //         3546846,
-    //         1500.try_into().unwrap(),
-    //         50.try_into().unwrap()..80.try_into().unwrap(),
-    //         500
-    //     );
-    //     let mut solver = Solver::new(spikes, nn);
+    #[bench]
+    fn bench_huge_single(b: &mut Bencher) {
+        let (nn, spikes) = create_random_lif_nn(
+            3546846,
+            1500.try_into().unwrap(),
+            50.try_into().unwrap()..80.try_into().unwrap(),
+            500
+        );
+        let mut solver = Solver::new(spikes, nn);
     
-    //     b.iter(|| black_box(solver.solve()));
-    // }
+        b.iter(|| black_box(solver.solve()));
+    }
 
-    // #[cfg(not(feature = "async"))]
-    // #[bench]
-    // fn bench_huge_multi(b: &mut Bencher) {
-    //     let (nn, spikes) = create_random_lif_nn(
-    //         3546846,
-    //         1500.try_into().unwrap(),
-    //         50.try_into().unwrap()..80.try_into().unwrap(),
-    //         500
-    //     );
+    #[cfg(not(feature = "async"))]
+    #[bench]
+    fn bench_huge_multi(b: &mut Bencher) {
+        let (nn, spikes) = create_random_lif_nn(
+            3546846,
+            1500.try_into().unwrap(),
+            50.try_into().unwrap()..80.try_into().unwrap(),
+            500
+        );
 
-    //     b.iter(|| black_box(nn.solve(spikes.clone())));
-    // }
+        b.iter(|| black_box(nn.solve(spikes.clone())));
+    }
 
-    // #[cfg(feature = "async")]
-    // #[bench]
-    // fn bench_huge_async(b: &mut Bencher) {
-    //     let runtime = Builder::new_multi_thread()
-    //         .enable_all()
-    //         .build()
-    //         .unwrap();
+    #[cfg(feature = "async")]
+    #[bench]
+    fn bench_huge_async(b: &mut Bencher) {
+        let runtime = Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap();
         
-    //     let (nn, spikes) = create_random_lif_nn(
-    //         3546846,
-    //         1500.try_into().unwrap(),
-    //         50.try_into().unwrap()..80.try_into().unwrap(),
-    //         500
-    //     );
+        let (nn, spikes) = create_random_lif_nn(
+            3546846,
+            1500.try_into().unwrap(),
+            50.try_into().unwrap()..80.try_into().unwrap(),
+            500
+        );
 
-    //     b.iter(|| runtime.block_on(black_box(nn.solve(spikes.clone()))));
-    // }
+        b.iter(|| runtime.block_on(black_box(nn.solve(spikes.clone()))));
+    }
 }
