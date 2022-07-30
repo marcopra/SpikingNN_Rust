@@ -72,6 +72,20 @@ impl From<&LifNeuronConfig> for LifNeuron {
     }
 }
 
+#[cfg(feature = "simd")]
+pub struct LifNeuronx4 {
+    v_rest: packed_simd::f64x4,
+    v_reset: packed_simd::f64x4,
+    v_threshold: packed_simd::f64x4,
+    tau: packed_simd::f64x4
+}
+
+#[cfg(feature = "simd")]
+pub struct LifSolverVarsx4 {
+    v_mem: packed_simd::f64x4,
+    ts_old: packed_simd::f64x4
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct LeakyIntegrateFire;
 
@@ -113,6 +127,7 @@ impl Model for LeakyIntegrateFire {
     /// After this code, the neuron may possibly have fired the spike.
     
     //TODO Cambiare da Option<Spike> a 1 o 0 per uso interno per andare a creare il vettore di output da moltiplicare con la matrice
+    #[inline]
     fn handle_spike(neuron: &LifNeuron, vars: &mut LifSolverVars, weighted_input_val: f64, ts: u128) -> f64 {
         // This early exit serves as a small optimization
         if weighted_input_val == 0.0 { return 0.0 }
@@ -141,8 +156,45 @@ impl Model for LeakyIntegrateFire {
         neuron.tau = nc.tau;
     }
 
+    #[cfg(feature = "simd")]
+    type Neuronx4 = LifNeuronx4;
+    #[cfg(feature = "simd")]
+    type SolverVarsx4 = LifSolverVarsx4;
 
-    
+    #[cfg(feature = "simd")]
+    #[inline]
+    fn neuron_x4_from_neurons(neurons: &[LifNeuron]) -> LifNeuronx4 {
+        LifNeuronx4 {
+            v_rest: From::from([neurons[0].v_rest, neurons[1].v_rest, neurons[2].v_rest, neurons[3].v_rest]),
+            v_reset: From::from([neurons[0].v_reset, neurons[1].v_reset, neurons[2].v_reset, neurons[3].v_reset]),
+            v_threshold: From::from([neurons[0].v_threshold, neurons[1].v_threshold, neurons[2].v_threshold, neurons[3].v_threshold]),
+            tau: From::from([neurons[0].tau, neurons[1].tau, neurons[2].tau, neurons[3].tau])
+        }
+    }
+    #[cfg(feature = "simd")]
+    #[inline]
+    fn vars_x4_from_vars(vars: &[LifSolverVars]) -> LifSolverVarsx4 {
+        LifSolverVarsx4 {
+            v_mem: From::from([vars[0].v_mem, vars[1].v_mem, vars[2].v_mem, vars[3].v_mem]),
+            ts_old: From::from([vars[0].ts_old as _, vars[1].ts_old as _, vars[2].ts_old as _, vars[3].ts_old as _])
+        }
+    }
+    #[cfg(feature = "simd")]
+    #[inline]
+    fn handle_spike_x4(neurons: &Self::Neuronx4, vars: &mut Self::SolverVarsx4, weighted_input_vals: packed_simd::f64x4, ts: f64) -> packed_simd::f64x4 {
+        use packed_simd::f64x4;
+
+        let ts = f64x4::splat(ts);
+        let dt: f64x4 = ts - vars.ts_old;
+        vars.ts_old = ts;
+        
+        vars.v_mem = neurons.v_rest + (vars.v_mem - neurons.v_rest) * (-dt / neurons.tau).exp() + weighted_input_vals;
+
+        let fired = vars.v_mem.gt(neurons.v_threshold);
+        vars.v_mem = fired.select(neurons.v_reset, vars.v_mem);
+
+        fired.select(f64x4::splat(1.0), f64x4::splat(0.0))
+    }
 }
 
 // IMPLEMENTATION FOR LIF NEURONS & LIF NEURON CONFIG
@@ -209,7 +261,6 @@ impl LifNeuronConfig {
             tau
         }
     }
-    
 }
 
 #[cfg(test)]

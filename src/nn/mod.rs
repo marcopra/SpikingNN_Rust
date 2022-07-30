@@ -24,7 +24,7 @@ pub struct Spike {
 
 impl Spike {
     //Di interfaccia
-    pub fn new(ts: u128, neuron_id: usize) -> Spike{
+    pub fn new(ts: u128, neuron_id: usize) -> Spike {
         Spike {
             ts,
             neuron_id

@@ -191,22 +191,20 @@ fn test_random_nn() {
 
 #[cfg(feature = "async")]
 #[test]
-fn test_huge() {
+fn test_huge_async() {
     use tokio::runtime::Builder;
     
-    let runtime = Builder::new_multi_thread()
+    let runtime = Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
     
-    let (nn, spikes) = create_random_lif_nn(
-        3546846,
-        1500.try_into().unwrap(),
-        50.try_into().unwrap()..80.try_into().unwrap(),
-        500
-    );
-
-    // let mut solver = Solver::new(spikes, nn);
+        let (nn, spikes) = create_random_lif_nn(
+            3546846,
+            1500.try_into().unwrap(),
+            50.try_into().unwrap()..80.try_into().unwrap(),
+            500
+        );
 
     println!("{:?}", runtime.block_on(nn.solve(spikes)));
 }

@@ -11,7 +11,7 @@ pub trait Model: 'static + Debug {
     type Neuron: 'static + Sized + Clone + Sync + RefInto<Self::SolverVars>;
 
     /// Contains the dynamic variables for each Neuron used by the solver
-    type SolverVars: Default + Send;
+    type SolverVars: Default + Send + Sync;
     
     /// Helper type to build neurons
     type Config: RefInto<Self::Neuron>;
@@ -24,6 +24,17 @@ pub trait Model: 'static + Debug {
     fn handle_spike(neuron: &Self::Neuron, vars: &mut Self::SolverVars, weighted_input_val: f64, ts: u128) -> f64;
 
     fn set_new_params(neuron: &mut Self::Neuron, nc: &Self::Config);
+
+    #[cfg(feature = "simd")]
+    type Neuronx4: Send;
+    #[cfg(feature = "simd")]
+    type SolverVarsx4: Send;
+    #[cfg(feature = "simd")]
+    fn neuron_x4_from_neurons(neurons: &[Self::Neuron]) -> Self::Neuronx4;
+    #[cfg(feature = "simd")]
+    fn vars_x4_from_vars(vars: &[Self::SolverVars]) -> Self::SolverVarsx4;
+    #[cfg(feature = "simd")]
+    fn handle_spike_x4(neurons: &Self::Neuronx4, vars: &mut Self::SolverVarsx4, weighted_input_val: packed_simd::f64x4, ts: f64) -> packed_simd::f64x4;
 }
 
 pub trait RefInto<T> { }
