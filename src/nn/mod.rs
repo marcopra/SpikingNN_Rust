@@ -5,8 +5,9 @@ use std::fmt;
 
 pub mod model;
 pub(crate) mod builder;
-pub(crate) mod solver_v1;
 
+#[cfg(test)]
+pub(crate) mod solver_v1;
 #[cfg(test)]
 mod tests;
 

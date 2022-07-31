@@ -6,8 +6,6 @@ use ndarray::{Array2, OwnedRepr, ArrayBase, Dim};
 pub struct Solver<M: Model>{
     input_spikes: Vec<Spike>,
     network: NN<M>,
-    sim_network: SimulatedNN<M>,
-    output_spikes: Vec<Spike>
 }
 
 struct SimulatedNeuron<M: Model> { 
@@ -42,9 +40,8 @@ where for <'a> &'a M::Neuron: Into<M::SolverVars> {
     pub fn new(input_spikes: Vec<Spike>, network: NN<M>) -> Solver<M> {
         Solver { 
             input_spikes, 
-            sim_network: Solver::init_neuron_vars(&network),
-            network, 
-            output_spikes: Vec::new() }
+            network 
+        }
     }
 
     /// Each spike of the input_spike vec is sent to the corresponding neuron 
@@ -117,8 +114,6 @@ where for <'a> &'a M::Neuron: Into<M::SolverVars> {
         //crea il vettore che tiene le spike generate dai vari neuroni 
         let mut output_vec: Vec<f64> = Vec::new();
 
-        //init del vettore che conterrà i parametri del layer i-esimo
-        let mut neuron_params: &Vec<M::Neuron> ;
         //del vec che conterrà le variabili del simulated_layer i-esimo
         let mut neuron_vars: &mut Vec<SimulatedNeuron<M>> ;
         
@@ -131,8 +126,6 @@ where for <'a> &'a M::Neuron: Into<M::SolverVars> {
         // Elabora per ogni neurone del layer il rispettivo output (se spike o meno)
         for (layer, sim_layer) in network.layers.iter().zip(&mut sim_network.layers){
             
-            //prende i params del layer i-esimo
-            neuron_params = &layer.neurons;
             //prende le vars del layer i-esimo
             neuron_vars = sim_layer;
 
@@ -350,12 +343,12 @@ where for <'a> &'a M::Neuron: Into<M::SolverVars> {
     /// Create a vec of u128 (val_to_set) starting from a f64 array and a val to use if the f64 is greater than 0 
     /// 
     /// If in the i-th position the val of he input vec is greater than 0, the new vec will have 'val_to_set in that position, otherwise it will have a 0
-    fn to_u128_vec(vec: &Vec<f64>, val_to_set: u128) -> Vec<u128>{
-
+    fn to_u128_vec<'a, T>(vec: T, val_to_set: u128) -> Vec<u128>
+    where T: IntoIterator<Item = &'a f64>
+    {
         let mut res: Vec<u128> =  Vec::new();
 
-        for &val in vec.iter(){
-
+        for &val in vec {
             if val > 0.0 { res.push(val_to_set)}
             else {res.push(u128::MAX)};
         }   
@@ -370,6 +363,7 @@ mod tests {
         
     }
 
+    #[test]
     fn test_correct_management_of_example_spike(){
 
     }

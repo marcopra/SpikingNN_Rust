@@ -252,7 +252,7 @@ mod tests {
             0.45, 
             0.23);
 
-        let neurons = LifNeuron::new_vec([nc].to_vec(), 3);
+        let _neurons = LifNeuron::new_vec([nc].to_vec(), 3);
 
         /*let my_nn = NNBuilder::new()
         .layer(
