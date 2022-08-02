@@ -1,3 +1,5 @@
+//! Neural network-related types
+
 use crate::Model;
 
 use self::model::Layer;
@@ -6,7 +8,7 @@ use ndarray::Array2;
 use thiserror::Error;
 
 pub mod model;
-pub(crate) mod builder;
+pub mod builder;
 
 #[cfg(test)]
 pub(crate) mod solver_v1;
@@ -14,18 +16,26 @@ pub(crate) mod solver_v1;
 mod tests;
 
 /// Represents the 'spike' that stimulates a neuron in a spiking neural network.
-///  
-/// The parameter _'ts'_ stands for 'Time of the Spike' and represents the time when the spike occurs
-/// while the parameter _'neuron_id'_ stands to
-
-// TODO Provare Efficienza una tupla al posto di una struct
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Spike {
+    /// Stands for "time of the spike", and represents a timestamp of when the spike occurs
     pub ts: u128,
+    /// Index of the neuron this spike applies to inside its layer
     pub neuron_id: usize
 }
 
 impl Spike {
+    /// Create a new spike at time `ts` for neuron `neuron_id`
+    /// 
+    /// # Examples
+    /// 
+    /// Create a `Spike` at instant 18 for neuron 3:
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::Spike;
+    /// let spike = Spike::new(18, 3);
+    /// assert_eq!(spike, Spike { ts: 18, neuron_id: 3 });
+    /// ```
     //Di interfaccia
     pub fn new(ts: u128, neuron_id: usize) -> Spike {
         Spike {
@@ -36,17 +46,23 @@ impl Spike {
 
     //Di interfaccia
     /// Create an array of spikes for a single neuron, given its ID.
+    /// The `ts_vec` does not need to be ordered.
     /// 
-    /// You can also give an unordered ts array as shown in the following example.
-    /// # Example of Usage
+    /// # Examples
+    /// 
+    /// Construct a `Vec` of `Spike`s for neuron 2 from an unordered set of timestamps:
     /// 
     /// ```
-    ///  let spikes_neuron_2 = [11, 9, 23, 43, 42].to_vec();
-    ///  let spike_vec_for_neuron_2 = Spike::spike_vec_for(neuron_id: 2, ts_vec: spikes_neuron_2 );
+    /// # use pds_spiking_nn::Spike;
+    /// let spikes_ts = [11, 9, 23, 43, 42].to_vec();
+    /// let spike_vec = Spike::spike_vec_for(2, spikes_ts);
     /// 
+    /// assert_eq!(
+    ///     spike_vec.into_iter().map(|Spike {ts, ..}| ts).collect::<Vec<_>>(),
+    ///     vec![9, 11, 23, 42, 43]
+    /// );
     /// ```
     pub fn spike_vec_for(neuron_id: usize, ts_vec: Vec<u128>) -> Vec<Spike> {
-
         let mut spike_vec : Vec<Spike> = Vec::with_capacity(ts_vec.len());
         
         //Creating the Spikes array for a single Neuron
@@ -62,25 +78,31 @@ impl Spike {
 
 
     /// Create an ordered array starting from all the spikes sent to the NN.
-    /// It takes a Matrix where each row i-th represents an array of spike for neuron i-th
-    /// then a single Vec is created. Eventually the array is sorted
     /// 
-    /// # Example
+    /// It takes a Matrix where i-th row represents an array of spikes for the i-th entry neuron,
+    /// then a single Vec is created. Eventually the array is sorted.
+    /// 
+    /// # Examples
+    /// 
     /// ```
-    ///  use crate::nn::Spike;
+    /// # use pds_spiking_nn::Spike;
+    /// let spikes_neuron_1 = [11, 9, 23, 43, 42].to_vec();
+    /// let spike_vec_for_neuron_1 = Spike::spike_vec_for(1, spikes_neuron_1);
     /// 
-    ///  let spikes_neuron_1 = [11, 9, 23, 43, 42].to_vec();
-    ///  let spike_vec_for_neuron_1 = Spike::spike_vec_for(2, spikes_neuron_1 );
-    ///  
-    ///  let spikes_neuron_2 = [1, 29, 3, 11, 22].to_vec();
-    ///  let spike_vec_for_neuron_2 = Spike::spike_vec_for(2, spikes_neuron_2 );
-    ///  
-    ///  let mut spikes: Vec<Vec<Spike>> = Vec::new();
-    ///  spikes.push(spike_vec_for_neuron_1);
-    ///  spikes.push(spike_vec_for_neuron_2);
-    ///  
-    ///  let sorted_spike_array_for_nn: Vec<Spike> = Spike::create_terminal_vec(spikes)
+    /// let spikes_neuron_2 = [1, 29, 3, 11, 22].to_vec();
+    /// let spike_vec_for_neuron_2 = Spike::spike_vec_for(2, spikes_neuron_2);
     /// 
+    /// let mut spikes = Vec::new();
+    /// spikes.push(spike_vec_for_neuron_1);
+    /// spikes.push(spike_vec_for_neuron_2);
+    /// 
+    /// let sorted_spike_array_for_nn = Spike::create_terminal_vec(spikes);
+    /// 
+    /// let mut iter = sorted_spike_array_for_nn.into_iter();
+    /// 
+    /// assert_eq!(iter.next(), Some(Spike {ts: 1, neuron_id: 2}));
+    /// assert_eq!(iter.next(), Some(Spike {ts: 3, neuron_id: 2}));
+    /// assert_eq!(iter.next(), Some(Spike {ts: 9, neuron_id: 1}));
     /// ```
     pub fn create_terminal_vec(spikes: Vec<Vec<Spike>>) -> Vec<Spike> {
         let mut res: Vec<Spike> = Vec::new();
@@ -99,10 +121,13 @@ impl Spike {
 
 impl fmt::Display for Spike {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}, {})", self.ts, self.neuron_id)
+        write!(f, "Spike(ts: {}, neuron_id: {})", self.ts, self.neuron_id)
     }
 }
 
+/// Error for `NN`'s `concat` and `extend`.
+/// 
+/// Only one variant is needed because only one kind of error can happen.
 #[derive(Error, Debug)]
 pub enum NNConcatError {
     #[error("Provided intra-nn weights have invalid dimensions")]
@@ -112,9 +137,11 @@ pub enum NNConcatError {
 /// The Neural Network itself.
 /// 
 /// This organizes `Neuron`s into consecutive layers, each constituted of some amount of `Neuron`s.
-/// `Neuron`s of the same or consecutive layers are connected by a weighted `Synapse`.
+/// `Neuron`s of the same or consecutive layers are connected by a weighted synapse (f64).
 /// 
-/// A neural network is stimulated by `Spike`s applied to the `Neuron`s of the entry layer.
+/// A neural network is stimulated by `Spike`s applied to the `Neuron`s of its entry layer.
+/// 
+/// Create a new `NN` through the builder at `NNBuilder`.
 #[derive(Clone)]
 pub struct NN<M: Model> {
     /// All the sorted layers of the neural network
@@ -126,6 +153,25 @@ impl<M: Model> NN<M> {
     /// 
     /// This is always guaranteed to be greater than zero
     /// by the `NNBuilder` necessary to construct an instance of `NN`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// // Create a sample nn
+    /// let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// assert_eq!(nn.num_layers(), 1);
+    /// ```
     pub fn num_layers(&self) -> usize {
         self.layers.len()
     }
@@ -133,6 +179,28 @@ impl<M: Model> NN<M> {
     /// Get the specified layer, or `None` if the index is out of bounds.
     /// 
     /// An unchecked variant of this functionality is provided via the `Index` implementation.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// // Create a sample nn
+    /// let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// // Get a reference to the first layer
+    /// let first_layer = nn.get_layer(0);
+    /// 
+    /// assert_eq!(first_layer.unwrap().num_neurons(), 2);
+    /// ```
     pub fn get_layer(&self, layer: usize) -> Option<&Layer<M>> {
         self.layers.get(layer)
     }
@@ -140,6 +208,28 @@ impl<M: Model> NN<M> {
     /// Get a mutable reference to the specified layer, or `None` if the index is out of bounds.
     /// 
     /// An unchecked variant of this functionality is provided via the `IndexMut` implementation.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// // Create a sample nn
+    /// let mut nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// // Modify an intra-layer weight
+    /// *nn.get_layer_mut(0).unwrap().get_intra_weight_mut(0, 1).unwrap() = -1.7;
+    /// 
+    /// assert_eq!(nn[0][(0, 1)], -1.7);
+    /// ```
     pub fn get_layer_mut(&mut self, layer: usize) -> Option<&mut Layer<M>> {
         self.layers.get_mut(layer)
     }
@@ -147,6 +237,28 @@ impl<M: Model> NN<M> {
     /// Get the neuron at the specified position of the specified layer, or `None` if any index is out of bounds.
     /// 
     /// An unchecked variant of this functionality is provided via the `Index` implementation.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// // Create a sample nn
+    /// let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// // Get a reference to the second neuron of the only layer of the nn
+    /// let neuron = nn.get_neuron(0, 1);
+    /// 
+    /// println!("{:?}", neuron); // Some(LifNeuron { v_rest: 1.0, v_reset: 0.4, v_threshold: 3.1, tau: 1.1 })
+    /// ```
     pub fn get_neuron(&self, layer: usize, neuron: usize) -> Option<&M::Neuron> {
         self.layers.get(layer)?.neurons.get(neuron)
     }
@@ -154,16 +266,79 @@ impl<M: Model> NN<M> {
     /// Get a mutable reference to the neuron at the specified position of the specified layer, or `None` if any index is out of bounds.
     /// 
     /// An unchecked variant of this functionality is provided via the `IndexMut` implementation.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// // Create a sample nn
+    /// let mut nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// // Get a mutable reference to the second neuron of the only layer of the nn
+    /// let neuron = nn.get_neuron_mut(0, 1);
+    /// # // TODO: no method for LifNeuron currently borrows self as mutable
+    /// ```
     pub fn get_neuron_mut(&mut self, layer: usize, neuron: usize) -> Option<&mut M::Neuron> {
         self.layers.get_mut(layer)?.neurons.get_mut(neuron)
     }
 
     /// Get the input weight to the specified entry-layer neuron
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// // Create a sample nn
+    /// let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// assert_eq!(nn.get_input_weight(0), Some(1.5));
+    /// assert_eq!(nn.get_input_weight(2), None);
+    /// ```
     pub fn get_input_weight(&self, to: usize) -> Option<f64> {
         self.layers[0].input_weights.get((to, to)).copied()
     }
 
     /// Get a mutable reference to the specified entry-layer neuron
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// // Create a sample nn
+    /// let mut nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// // Modify the second input weight
+    /// *nn.get_input_weight_mut(1).unwrap() = 2.0;
+    /// 
+    /// assert_eq!(nn.get_input_weight(1), Some(2.0));
+    /// ```
     pub fn get_input_weight_mut(&mut self, to: usize) -> Option<&mut f64> {
         self.layers[0].input_weights.get_mut((to, to))
     }
@@ -174,6 +349,27 @@ impl<M: Model> NN<M> {
     /// return `None`.
     /// 
     /// An unchecked variant of this functionality is provided via the `Index` implementation.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// // Create a sample nn
+    /// let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// assert_eq!(nn.get_weight((0, 1), (0, 0)), Some(-0.2));
+    /// assert_eq!(nn.get_weight((0, 0), (1, 2)), None);
+    /// assert_eq!(nn.get_weight((0, 1), (2, 0)), None);
+    /// ```
     pub fn get_weight(&self, from: (usize, usize), to: (usize, usize)) -> Option<f64> {
         if from.0 == to.0 {
             // Intra-layer weight
@@ -192,6 +388,28 @@ impl<M: Model> NN<M> {
     /// return `None`.
     /// 
     /// An unchecked variant of this functionality is provided via the `IndexMut` implementation.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// // Create a sample nn
+    /// let mut nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// // Modify a weight
+    /// *nn.get_weight_mut((0, 1), (0, 0)).unwrap() = -0.5;
+    /// 
+    /// assert_eq!(nn[0][(1, 0)], -0.5);
+    /// ```
     pub fn get_weight_mut(&mut self, from: (usize, usize), to: (usize, usize)) -> Option<&mut f64> {
         if from.0 == to.0 {
             // Intra-layer weight
@@ -209,6 +427,36 @@ impl<M: Model> NN<M> {
     /// The two neural networks are merged via the provided new input weights, which will replace `other`'s.
     /// 
     /// In case of errors, `self` will be preserved.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// // Create a sample nn
+    /// let mut nn1 = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// let nn2 = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [LifNeuron::new(&LifNeuronConfig::new(0.9, 0.5, 2.8, 1.4))],
+    ///         [1.3],
+    ///         [[0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// // Extend nn1 by concatenating nn2 to it in place
+    /// assert!(nn1.extend(&nn2, [1.3, 1.4]).is_ok());
+    /// assert_eq!(nn1.num_layers(), 2);
+    /// assert_eq!(nn1[((0, 1), (1, 0))], 1.4);
+    /// ```
     pub fn extend(&mut self, other: &Self, intra_nn_weights: impl Borrow<[f64]>) -> Result<(), NNConcatError> {
         let new_input_weights = Array2::from_shape_vec(
             (self.layers.last().unwrap().num_neurons(), other.layers[0].num_neurons()),
@@ -225,6 +473,29 @@ impl<M: Model> NN<M> {
     /// Concatenate this `NN` with another one, to obtain a new `NN`.
     /// 
     /// The two neural networks are merged via the provided new input weights, which will replace `other`'s.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// // Create a sample nn
+    /// let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// // Create a new NN by concatenating nn to itself
+    /// let new_nn = nn.concat(&nn, [1.2, 1.4, 1.5, 1.2]).unwrap();
+    /// 
+    /// assert_eq!(new_nn.num_layers(), 2);
+    /// assert_eq!(new_nn[((0, 0), (1, 1))], 1.4);
+    /// ```
     pub fn concat(&self, other: &Self, intra_nn_weights: impl Borrow<[f64]>) -> Result<Self, NNConcatError> {
         let mut new_nn = self.clone();
         new_nn.extend(other, intra_nn_weights).map(|_| new_nn)
@@ -237,6 +508,29 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
     /// Solve the neural network stimulated by the provided spikes.
     /// 
     /// This function returns a list of every spike's timestamp generated by every neuron.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, Spike, lif::*};
+    /// let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// let spikes = Spike::create_terminal_vec(vec![
+    ///     Spike::spike_vec_for(0, vec![1, 3, 4]),
+    ///     Spike::spike_vec_for(1, vec![2, 3, 6])
+    /// ]);
+    /// 
+    /// assert_eq!(nn.solve(spikes), vec![vec![4], vec![3]]);
+    /// ```
     #[cfg(not(feature = "async"))]
     pub fn solve(&self, spikes: Vec<Spike>) -> Vec<Vec<u128>> {
         use crate::sync::LayerManager;
@@ -295,6 +589,33 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
     /// Solve the neural network stimulated by the provided spikes.
     /// 
     /// This function returns a list of every spike's timestamp generated by every neuron.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, Spike, lif::*};
+    /// # use tokio::runtime::Runtime;
+    /// # let runtime = Runtime::new().unwrap();
+    /// let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// let spikes = Spike::create_terminal_vec(vec![
+    ///     Spike::spike_vec_for(0, vec![1, 3, 4]),
+    ///     Spike::spike_vec_for(1, vec![2, 3, 6])
+    /// ]);
+    /// 
+    /// # runtime.block_on(async {
+    /// assert_eq!(nn.solve(spikes).await, vec![vec![4], vec![3]]);
+    /// # });
+    /// ```
     #[cfg(feature = "async")]
     pub async fn solve(&self, spikes: Vec<Spike>) -> Vec<Vec<u128>> {
         use crate::sync::LayerManager;

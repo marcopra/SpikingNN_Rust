@@ -1,3 +1,5 @@
+//! Utilities for the parallel solver
+
 #[cfg(feature = "async")]
 use tokio::sync::mpsc::{Receiver, Sender};
 #[cfg(not(feature = "async"))]
@@ -7,14 +9,29 @@ use ndarray::Array2;
 
 use crate::{nn::model::Layer, Model};
 
+/// Linked with a `NN`'s `Layer`, this "solves" that layer.
+/// 
+/// Spikes are received through an mpsc channel as `Array2`s of the previous layer's neurons' outputs.
+/// After applying said input to every neuron in this layer, an output array is constructed and passed to the next layer
+/// via a `Sender`, and the same spike is then reapplied to the same neurons via the intra-weights.
+/// 
+/// This struct's lifetime is that of the `NN` it references the `Layer` from.
 pub(crate) struct LayerManager<'a, M: Model> {
+    /// Reference to the `NN`'s `Layer` this manager is for
     layer: &'a Layer<M>,
+    /// `Vec` of the `SolverVar`s for every neuron in this layer.
+    /// `SolverVar`s contain the mutable portion of the neuron, which must be dynamic during the solve process.
     vars: Vec<M::SolverVars>,
+    /// Mpsc `Receiver` linked to the previous layer's sender
     receiver: Receiver<(u128, Array2<f64>)>,
+    /// Mpsc `Sender` linked to the next layer's receiver
     sender: Sender<(u128, Array2<f64>)>,
 }
 
 impl<'a, M: Model> LayerManager<'a, M> where for<'b> &'b M::Neuron: Into<M::SolverVars> {
+    /// Build a new instance of `LayerManager` for the provided `Layer`.
+    /// 
+    /// `receiver` must be linked to the previous layer's manager, and `sender` to the next layer's receiver.
     pub fn new(
         layer: &'a Layer<M>,
         receiver: Receiver<(u128, Array2<f64>)>,
@@ -31,6 +48,10 @@ impl<'a, M: Model> LayerManager<'a, M> where for<'b> &'b M::Neuron: Into<M::Solv
         }
     }
 
+    /// Consume `self` and solve the layer.
+    /// 
+    /// This only returns after the previous layer's manager has completed its `run` and
+    /// dropped its `sender`.
     #[cfg(all(not(feature = "async"), not(feature = "simd")))]
     pub fn run(mut self) {
         for (ts, spike) in self.receiver {
@@ -60,6 +81,10 @@ impl<'a, M: Model> LayerManager<'a, M> where for<'b> &'b M::Neuron: Into<M::Solv
         }
     }
 
+    /// Consume `self` and solve the layer.
+    /// 
+    /// This only returns after the previous layer's manager has completed its `run` and
+    /// dropped its `sender`.
     #[cfg(all(not(feature = "async"), feature = "simd"))]
     pub fn run(mut self) {
         use packed_simd::f64x4;
@@ -133,6 +158,10 @@ impl<'a, M: Model> LayerManager<'a, M> where for<'b> &'b M::Neuron: Into<M::Solv
         }
     }
 
+    /// Consume `self` and solve the layer.
+    /// 
+    /// This `Future` only resolves after the previous layer's manager has completed its `run` and
+    /// dropped its `sender`.
     #[cfg(all(feature = "async", not(feature = "simd")))]
     pub async fn run(mut self) {
         let mut weighted_inputs;
@@ -164,6 +193,10 @@ impl<'a, M: Model> LayerManager<'a, M> where for<'b> &'b M::Neuron: Into<M::Solv
         }
     }
 
+    /// Consume `self` and solve the layer.
+    /// 
+    /// This `Future` only resolves after the previous layer's manager has completed its `run` and
+    /// dropped its `sender`.
     #[cfg(all(feature = "async", feature = "simd"))]
     pub async fn run(mut self) {
         use packed_simd::f64x4;
