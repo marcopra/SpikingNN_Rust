@@ -101,7 +101,7 @@ impl<'a, M: Model> LayerManager<'a, M> where for<'b> &'b M::Neuron: Into<M::Solv
                         neurons,
                         vars,
                         unsafe { f64x4::from_slice_unaligned_unchecked(&weighted_inputs_slice[4*i..(4*i + 4)]) },
-                        ts as _
+                        ts
                     );
 
                     spiked |= o.gt(f64x4::splat(0.5)).any();
@@ -205,7 +205,7 @@ impl<'a, M: Model> LayerManager<'a, M> where for<'b> &'b M::Neuron: Into<M::Solv
                         neurons,
                         vars,
                         unsafe { f64x4::from_slice_unaligned_unchecked(&weighted_inputs_slice[4*i..(4*i + 4)]) },
-                        ts as _
+                        ts
                     );
 
                     spiked |= o.gt(f64x4::splat(0.5)).any();

@@ -181,10 +181,10 @@ impl Model for LeakyIntegrateFire {
     }
     #[cfg(feature = "simd")]
     #[inline]
-    fn handle_spike_x4(neurons: &Self::Neuronx4, vars: &mut Self::SolverVarsx4, weighted_input_vals: packed_simd::f64x4, ts: f64) -> packed_simd::f64x4 {
+    fn handle_spike_x4(neurons: &Self::Neuronx4, vars: &mut Self::SolverVarsx4, weighted_input_vals: packed_simd::f64x4, ts: u128) -> packed_simd::f64x4 {
         use packed_simd::f64x4;
 
-        let ts = f64x4::splat(ts);
+        let ts = f64x4::splat(ts as _);
         let dt: f64x4 = ts - vars.ts_old;
         vars.ts_old = ts;
         

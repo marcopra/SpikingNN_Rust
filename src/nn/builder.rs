@@ -242,7 +242,7 @@ impl<M: Model> Debug for NNBuilder<M, Dynamic> {
 //TODO 
 #[cfg(test)]
 mod tests {
-    use crate::{LifNeuron, LifNeuronConfig};
+    use crate::lif::{LifNeuron, LifNeuronConfig};
 
     #[test]
     fn test_building_new_nn() {

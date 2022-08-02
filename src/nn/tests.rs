@@ -1,7 +1,7 @@
 use std::{ops::Range, num::NonZeroUsize};
 use rand::prelude::*;
 use rand_pcg::Pcg64Mcg;
-use crate::{nn::{Spike, solver_v1::Solver}, NNBuilder, LeakyIntegrateFire, LifNeuronConfig, NN, LifNeuron};
+use crate::{nn::{Spike, solver_v1::Solver}, NNBuilder, lif::LeakyIntegrateFire, lif::LifNeuronConfig, NN, lif::LifNeuron};
 
 fn random_lif_neuron<Rng: RngCore>(rng: &mut Rng) -> LifNeuron {
     let v_rest = rng.gen_range(0.8..2.5);
@@ -413,6 +413,7 @@ mod benches {
     }
 
     #[bench]
+    #[ignore]
     fn bench_huge_single(b: &mut Bencher) {
         let (nn, spikes) = create_random_lif_nn(
             3546846,
@@ -427,6 +428,7 @@ mod benches {
 
     #[cfg(not(feature = "async"))]
     #[bench]
+    #[ignore]
     fn bench_huge_multi(b: &mut Bencher) {
         let (nn, spikes) = create_random_lif_nn(
             3546846,
@@ -440,6 +442,7 @@ mod benches {
 
     #[cfg(feature = "async")]
     #[bench]
+    #[ignore]
     fn bench_huge_async(b: &mut Bencher) {
         let runtime = Builder::new_multi_thread()
             .enable_all()
