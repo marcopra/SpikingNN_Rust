@@ -17,7 +17,7 @@ use crate::Model;
 /// 
 ///
 #[derive(Clone, Debug)]
-pub struct LifNeuron {
+pub struct LifNeuron { // TODO: public fields?
     v_rest: f64,
     v_reset: f64,
     v_threshold: f64,
@@ -94,8 +94,6 @@ impl Model for LeakyIntegrateFire {
     type SolverVars = LifSolverVars;
     type Config = LifNeuronConfig;
 
-    const SPIKE_WEIGHT: f64 = 1.0; //TODO vedere se tenerla
-
     /// Update the value of current membrane tension, reading any new spike.
     /// When the neuron receives one or more impulses, it compute the new tension of the membrane,
     /// thanks to a specific configurable model.
@@ -147,13 +145,6 @@ impl Model for LeakyIntegrateFire {
         } else {
             0.
         }
-    }
-
-    fn set_new_params(neuron: &mut LifNeuron, nc: &Self::Config) {
-        neuron.v_rest = nc.v_rest;
-        neuron.v_reset = nc.v_reset;
-        neuron.v_threshold =  nc.v_threshold;
-        neuron.tau = nc.tau;
     }
 
     #[cfg(feature = "simd")]
@@ -216,7 +207,7 @@ impl LifNeuron {
     /// all the _'dim'_ neurons required.
     /// Otherwise it will create a Neuron for each specified NeuronConfig
     /// 
-    /// # Panic
+    /// # Panics
     /// Panics if the NeuronConfig array has a lenght (greater than one) 
     /// which differs from _'dim'_.
     pub fn new_vec(ncs: Vec<LifNeuronConfig>, dim: usize) -> Vec<LifNeuron>{
@@ -262,89 +253,3 @@ impl LifNeuronConfig {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::{LifNeuron, LifNeuronConfig, LeakyIntegrateFire, super::Model};
-    
-    #[test]
-    fn test_config_neurons() {
-        //Config Definitions
-        let nc = LifNeuronConfig::new(
-            0.2,
-            0.1, 
-            0.45, 
-            0.23);
-    
-        let nc2 = LifNeuronConfig::new(
-            2.3, 
-            12.2, 
-            0.8, 
-            0.7);
-
-        let _ne = LifNeuron::from(&nc);
-        let mut neuron = LifNeuron::new(&nc);
-
-        LeakyIntegrateFire::set_new_params(&mut neuron, &nc2);
-    }
-}
-/* 
-    //This function inizialize the square `Matrix´ containing the weight of the intra-layer links
-    //The row index corresponds to the output link, while the column index corresponds to the input link
-    //The diagonal of the `Matrix´ is initialized to 0
-    // fn initialize_intra_layer_weights(n: usize)-> Matrix<Synapse>{
-
-    //     //Using a fixed seed to generate random values
-    //     let mut rng = Pcg32::seed_from_u64(0);
-    //     let mut diag = 0;
-
-    //     //Generating Random weights...
-    //     let data = (0..n*n).map(|i| {
-    //         if i == diag{
-    //             diag += n + 1;
-    //             return 0.0
-
-    //         }
-    //         else{
-    //             return rng.gen::<Synapse>()
-    //         }
-    //     }).collect::<Vec<Synapse>>();
-
-        
-    //     return Matrix::from_raw_data(n, n, data);
-
-    // }
-
-    // //This function inizialize the square `Matrix´ containing the weight of the inter-layer links
-    // //The row index corresponds to the output link, while the column index corresponds to the input link
-    // //This is a triangular Matrix
-    // fn initialize_inter_layer_weights(row: usize, col: usize)-> Matrix<Synapse>{
-
-    //     //Using a fixed seed to generate random values
-    //     let mut rng = Pcg32::seed_from_u64(0);
-    //     let mut diag = 0;
-
-
-
-    //     let data = (0..row*col).map(|_| 
-            
-    //         rng.gen::<Synapse>()
-    
-    //     ).collect::<Vec<Synapse>>();
-
-    
-        
-    //     return Matrix::from_raw_data(row, col, data);
-
-    // }
-
-    
-
-    // fn test_bozza(){
-    //     let first_spike_input_n1: Vec<u16> = [Spike::new(12,1), Spike::new(34,3),Spike::new(123,2)].to_vec();
-    //     let first_spike_input_n2: Vec<u8> = [0, 0, 0, 1, 0, 0, 0, 1, 0].to_vec();
-
-    // }
-
-}
-*/

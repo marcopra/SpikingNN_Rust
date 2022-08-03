@@ -14,7 +14,7 @@ use ndarray::{Array2, Array1};
 use thiserror::Error;
 use crate::{NN, Model};
 
-use super::model::Layer;
+use super::layer::Layer;
 pub trait Dim: Copy { }
 
 #[derive(Clone, Copy)]

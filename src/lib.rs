@@ -8,6 +8,7 @@ mod sync;
 
 // Re-exports
 pub use nn::{NN, Spike};
+pub use nn::layer::Layer;
 pub use nn::builder::NNBuilder;
-pub use nn::model::{Model, Layer};
+pub use nn::model::Model;
 pub use nn::model::lif;

@@ -7,7 +7,7 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use ndarray::Array2;
 
-use crate::{nn::model::Layer, Model};
+use crate::{nn::layer::Layer, Model};
 
 /// Linked with a `NN`'s `Layer`, this "solves" that layer.
 /// 

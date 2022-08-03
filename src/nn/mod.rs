@@ -2,11 +2,12 @@
 
 use crate::Model;
 
-use self::model::Layer;
+use self::layer::Layer;
 use std::{fmt, ops::{Index, IndexMut}, borrow::Borrow};
 use ndarray::Array2;
 use thiserror::Error;
 
+pub mod layer;
 pub mod model;
 pub mod builder;
 
@@ -502,8 +503,6 @@ impl<M: Model> NN<M> {
     }
 }
 
-// I need to explicitly request RefInto<SolverVars> for Neuron because of a limitation in the Rust compiler with respect
-// to implied bounds. See: https://users.rust-lang.org/t/hrtb-in-trait-definition-for-associated-types/78687
 impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
     /// Solve the neural network stimulated by the provided spikes.
     /// 
@@ -535,7 +534,6 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
     pub fn solve(&self, spikes: Vec<Spike>) -> Vec<Vec<u128>> {
         use crate::sync::LayerManager;
         use std::{mem::{transmute, replace}, thread, sync::mpsc::channel};
-        use ndarray::Array2;
         
         // These will be respectively the first layer's sender and the last layer's receiver
         let (sender, mut receiver) = channel();
