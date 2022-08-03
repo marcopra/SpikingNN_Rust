@@ -202,6 +202,7 @@ async fn test_big_async() {
 
 #[cfg(not(feature = "async"))]
 #[test]
+#[ignore]
 fn test_huge_sync() {
     let (nn, spikes) = create_random_lif_nn(
         3546846,
@@ -216,6 +217,7 @@ fn test_huge_sync() {
 
 #[cfg(feature = "async")]
 #[tokio::test]
+#[ignore]
 async fn test_huge_async() {
     let (nn, spikes) = create_random_lif_nn(
         3546846,

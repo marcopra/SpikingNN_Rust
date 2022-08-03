@@ -57,6 +57,6 @@ pub trait Model: 'static + Debug + Clone {
 /// Unfortunately, the Rust compiler currently has trouble keeping track of bounds of this kind,
 /// so every time this bound is needed, it's necessary to explicitly "request" it.
 /// 
-/// See: https://users.rust-lang.org/t/hrtb-in-trait-definition-for-associated-types/78687
+/// See: <https://users.rust-lang.org/t/hrtb-in-trait-definition-for-associated-types/78687>
 pub trait RefInto<T> { }
 impl<T, U> RefInto<T> for U where for<'a> &'a U: Into<T> { }

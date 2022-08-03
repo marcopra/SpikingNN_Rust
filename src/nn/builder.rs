@@ -7,24 +7,26 @@
 //! Additionally, a dynamically checked variant is supplied for building neural networks whose
 //! dimensions are not known at compile time.
 
-// TODO: intra-weights square matrix? Should we request a Nx(N-1) matrix to dismiss the useless self weight?
-
 use std::{marker::PhantomData, borrow::Borrow, fmt::Debug};
 use ndarray::{Array2, Array1};
 use thiserror::Error;
 use crate::{NN, Model};
-
 use super::layer::Layer;
+
+/// Used for compile-time checks of `NNBuilder`'s dimensions
 pub trait Dim: Copy { }
 
+/// For empty statically checked builders
 #[derive(Clone, Copy)]
 pub struct Zero;
 impl Dim for Zero { }
 
+/// For non-empty statically checked builders
 #[derive(Clone, Copy)]
 pub struct NotZero<const N: usize>;
 impl<const N: usize> Dim for NotZero<N> { }
 
+/// For dynamically checked builders
 #[derive(Clone, Copy)]
 pub struct Dynamic;
 impl Dim for Dynamic { }
@@ -44,34 +46,77 @@ pub enum DynamicBuilderError<M: Model> {
 /// 
 /// # Examples
 /// 
-/// Creating a simple 2-layers NN:
+/// Creating a simple 2-layers LIF NN with dimensions known at compile time:
 /// 
 /// ```
-/// let nn = NNBuilder::new()
+/// # use pds_spiking_nn::{NNBuilder, lif::*};
+/// let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
 ///     // Insert entry layer
 ///     .layer(
-///         &[Neuron{}, Neuron{}],
-///         &[0.1, 3.0],
-///         &[
+///         [
+///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.3, 2.8, 1.0)),
+///             LifNeuron::new(&LifNeuronConfig::new(1.2, 0.5, 3.1, 0.9))
+///         ],
+///         [0.9, 1.4],
+///         [
 ///             [0.0, -0.3],
-///             [-1.5, 0.0]
+///             [-0.3, 0.0]
 ///         ]
 ///     )
 ///     // Insert 2nd (and exit) layer
 ///     .layer(
-///         &[Neuron{}, Neuron{}, Neuron{}],
-///         &[
-///             [1.1, 2.2],
-///             [3.3, 4.4],
-///             [5.5, 6.6]
+///         [
+///             LifNeuron::new(&LifNeuronConfig::new(0.9, 0.6, 2.5, 1.1)),
+///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.6, 2.6, 1.1)),
+///             LifNeuron::new(&LifNeuronConfig::new(0.8, 0.3, 2.2, 1.3))
 ///         ],
-///         &[
+///         [
+///             [1.5, 1.5, 1.3],
+///             [1.2, 1.5, 1.1]
+///         ],
+///         [
 ///             [0.0, -0.1, -0.2],
-///             [-0.3, 0.0, -0.4],
-///             [-0.5, -0.6, 0.0]
+///             [-0.3, 0.0, -0.3],
+///             [-0.2, -0.2, 0.0]
 ///         ]
 ///     )
 ///     .build();
+/// ```
+/// 
+/// Creating the same neural network but from a dynamic builder:
+/// 
+/// ```
+/// # use pds_spiking_nn::{NNBuilder, nn::builder::DynamicBuilderError, lif::*};
+/// let nn = NNBuilder::<LeakyIntegrateFire, _>::new_dynamic()
+///     .layer(
+///         [
+///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.3, 2.8, 1.0)),
+///             LifNeuron::new(&LifNeuronConfig::new(1.2, 0.5, 3.1, 0.9))
+///         ],
+///         [0.9, 1.4],
+///         [
+///             0.0, -0.3,
+///             -0.3, 0.0
+///         ]
+///     )?
+///     .layer(
+///         [
+///             LifNeuron::new(&LifNeuronConfig::new(0.9, 0.6, 2.5, 1.1)),
+///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.6, 2.6, 1.1)),
+///             LifNeuron::new(&LifNeuronConfig::new(0.8, 0.3, 2.2, 1.3))
+///         ],
+///         [
+///             1.5, 1.5, 1.3,
+///             1.2, 1.5, 1.1
+///         ],
+///         [
+///             0.0, -0.1, -0.2,
+///             -0.3, 0.0, -0.3,
+///             -0.2, -0.2, 0.0
+///         ]
+///     )?
+///     .build()?;
+/// # Ok::<(), DynamicBuilderError<LeakyIntegrateFire>>(())
 /// ```
 #[derive(Clone)]
 pub struct NNBuilder<M: Model, D: Dim> {
@@ -87,6 +132,15 @@ impl<M: Model> NNBuilder<M, Dynamic> {
     /// 
     /// In a dynamic `NNBuilder` size checks are performed at runtime, allowing for creation of `NN`s whose
     /// size is not known at compile time, at the small cost of the checks necessary to ensure its validity.
+    /// 
+    /// # Examples
+    /// 
+    /// Create a new dynamic `NNBuilder`:
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// let dynamic_builder = NNBuilder::<LeakyIntegrateFire, _>::new_dynamic();
+    /// ```
     pub fn new_dynamic() -> Self {
         Self { nn: Self::new_nn(), _phantom: PhantomData }
     }
@@ -94,6 +148,41 @@ impl<M: Model> NNBuilder<M, Dynamic> {
     /// Add a layer to the neural network.
     /// 
     /// Note: input and intra weights are flattened row-major matrices (one row for each neuron in the layer).
+    /// 
+    /// This function can fail with `DynamicBuilderError::InvalidSizes` iff:
+    ///  - neurons.len() is zero
+    ///  - input_weights.len() is not compatible with the previous layer's size and the current one
+    ///  - intra_weights.len() is different from neurons.len() squared
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// let mut builder = NNBuilder::<LeakyIntegrateFire, _>::new_dynamic()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.3, 2.8, 1.0)),
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.2, 0.5, 3.1, 0.9))
+    ///         ],
+    ///         [0.9, 1.4],
+    ///         [
+    ///             0.0, -0.3,
+    ///             -0.3, 0.0
+    ///         ]
+    ///     );
+    /// 
+    /// assert!(builder.is_ok());
+    /// 
+    /// builder = builder.unwrap().layer(
+    ///     [
+    ///         LifNeuron::new(&LifNeuronConfig::new(1.0, 0.3, 2.8, 1.0)),
+    ///     ],
+    ///     [1.1], // Not enough input weights provided! Should be 2x1 = 2
+    ///     [0.0]
+    /// );
+    /// 
+    /// assert!(builder.is_err());
+    /// ```
     pub fn layer(
         mut self,
         neurons: impl Borrow<[M::Neuron]>,
@@ -138,6 +227,53 @@ impl<M: Model> NNBuilder<M, Dynamic> {
     }
 
     /// Build the `NN`
+    /// 
+    /// This function can fail with `DynamicBuilderError::EmptyNN` if called on an empty builder.
+    /// 
+    /// # Examples
+    /// 
+    /// Successful build:
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, nn::builder::DynamicBuilderError, lif::*};
+    /// let nn = NNBuilder::<LeakyIntegrateFire, _>::new_dynamic()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.3, 2.8, 1.0)),
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.2, 0.5, 3.1, 0.9))
+    ///         ],
+    ///         [0.9, 1.4],
+    ///         [
+    ///             0.0, -0.3,
+    ///             -0.3, 0.0
+    ///         ]
+    ///     )?
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(0.9, 0.6, 2.5, 1.1)),
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.6, 2.6, 1.1)),
+    ///             LifNeuron::new(&LifNeuronConfig::new(0.8, 0.3, 2.2, 1.3))
+    ///         ],
+    ///         [
+    ///             1.5, 1.5, 1.3,
+    ///             1.2, 1.5, 1.1
+    ///         ],
+    ///         [
+    ///             0.0, -0.1, -0.2,
+    ///             -0.3, 0.0, -0.3,
+    ///             -0.2, -0.2, 0.0
+    ///         ]
+    ///     )?
+    ///     .build()?;
+    /// # Ok::<(), DynamicBuilderError<LeakyIntegrateFire>>(())
+    /// ```
+    /// 
+    /// Error if builder is empty:
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// assert!(NNBuilder::<LeakyIntegrateFire, _>::new_dynamic().build().is_err());
+    /// ```
     pub fn build(self) -> Result<NN<M>, DynamicBuilderError<M>> {
         if self.nn.layers.is_empty() {
             Err(DynamicBuilderError::EmptyNN(self))
@@ -153,6 +289,15 @@ impl<M: Model> NNBuilder<M, Zero> {
     /// 
     /// In a static `NNBuilder` size checks are performed at compile time for maximum efficiency.
     /// This has the obvious drawback of requiring that the sizes of the resulting `NN` be known at compile time as well.
+    /// 
+    /// # Examples
+    /// 
+    /// Create a new static `NNBuilder`:
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// let builder = NNBuilder::<LeakyIntegrateFire, _>::new();
+    /// ```
     pub fn new() -> Self {
         Self { nn: Self::new_nn(), _phantom: PhantomData }
     }
@@ -160,6 +305,26 @@ impl<M: Model> NNBuilder<M, Zero> {
     /// Add the entry layer to the neural network.
     /// 
     /// Note: diagonal intra-weights (i.e. from and to the same neuron) are ignored.
+    /// 
+    /// # Examples
+    /// 
+    /// Creating a static builder and insert the first layer:
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// let builder = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.3, 2.8, 1.0)),
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.2, 0.5, 3.1, 0.9))
+    ///         ],
+    ///         [0.9, 1.4],
+    ///         [
+    ///             [0.0, -0.3],
+    ///             [-0.3, 0.0]
+    ///         ]
+    ///     );
+    /// ```
     pub fn layer<const N: usize>(
         mut self,
         neurons: impl Borrow<[M::Neuron; N]>,
@@ -199,7 +364,44 @@ impl<M: Model, const LEN_LAST_LAYER: usize> NNBuilder<M, NotZero<LEN_LAST_LAYER>
         self.morph()
     }
 
-    /// Build the `NN`
+    /// Build the `NN`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     // Insert entry layer
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.3, 2.8, 1.0)),
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.2, 0.5, 3.1, 0.9))
+    ///         ],
+    ///         [0.9, 1.4],
+    ///         [
+    ///             [0.0, -0.3],
+    ///             [-0.3, 0.0]
+    ///         ]
+    ///     )
+    ///     // Insert 2nd (and exit) layer
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(0.9, 0.6, 2.5, 1.1)),
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.6, 2.6, 1.1)),
+    ///             LifNeuron::new(&LifNeuronConfig::new(0.8, 0.3, 2.2, 1.3))
+    ///         ],
+    ///         [
+    ///             [1.5, 1.5, 1.3],
+    ///             [1.2, 1.5, 1.1]
+    ///         ],
+    ///         [
+    ///             [0.0, -0.1, -0.2],
+    ///             [-0.3, 0.0, -0.3],
+    ///             [-0.2, -0.2, 0.0]
+    ///         ]
+    ///     )
+    ///     .build();
+    /// ```
     pub fn build(self) -> NN<M> {
         self.inner_build()
     }
@@ -238,53 +440,3 @@ impl<M: Model> Debug for NNBuilder<M, Dynamic> {
         f.debug_struct("NNBuilder").finish()
     }
 }
-
-//TODO 
-#[cfg(test)]
-mod tests {
-    use crate::lif::{LifNeuron, LifNeuronConfig};
-
-    #[test]
-    fn test_building_new_nn() {
-        let nc = LifNeuronConfig::new(
-            0.2,
-            0.1, 
-            0.45, 
-            0.23);
-
-        let _neurons = LifNeuron::new_vec([nc].to_vec(), 3);
-
-        /*let my_nn = NNBuilder::new()
-        .layer(
-            &[neurons],
-            &[0.1, 3.0],
-            &[
-                [0.0, -0.3],
-                [-1.5, 0.0]
-            ]
-        )
-        // Insert 2nd (and exit) layer
-        .layer(
-            &[Neuron{}, Neuron{}, Neuron{}],
-            &[
-                [1.1, 2.2],
-                [3.3, 4.4],
-                [5.5, 6.6]
-            ],
-            &[
-                [0.0, -0.1, -0.2],
-                [-0.3, 0.0, -0.4],
-                [-0.5, -0.6, 0.0]
-            ]);*/
-    }
-
-    #[test]
-    fn test_access_layers(){
-
-    }
-
-    #[test]
-    fn test_access_single_neuron(){
-        
-    }
-} 
