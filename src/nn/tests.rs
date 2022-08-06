@@ -234,6 +234,7 @@ async fn test_huge_async() {
 mod benches {
     extern crate test;
     use test::{Bencher, black_box};
+    #[cfg(feature = "async")]
     use tokio::runtime::Builder;
 
     use super::{create_random_lif_nn, super::solver_v1::Solver};

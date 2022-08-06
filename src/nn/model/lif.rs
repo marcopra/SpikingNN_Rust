@@ -1,26 +1,31 @@
+//! Implementation of the Leaky Integrate and Fire (LIF) model for spiking neural networks
+
 use crate::Model;
 
-/// LifNeuron
-/// ------
-/// 
 /// A struct for a single Neuron of the SNN.
 /// Each Neuron has its own parameters such as _current membrane tension_, _threshold tension_ etc...
 /// 
-/// Usage Example
-/// --------------
+/// # Examples
+/// 
+/// Create a single neuron through a `LifNeuronConfig`:
 /// 
 /// ```
-/// let nc = LifNeuronConfig::new(parm1, parm2, ...)
-/// let neuron = LifNeuron::new(&nc)
+/// # use pds_spiking_nn::lif::*;
+/// // Create the "config". This can be used to build a new neuron
+/// let nc = LifNeuronConfig::new(1.2, 0.6, 3.0, 1.0);
+/// 
+/// // Get the neuron from the config
+/// let neuron = LifNeuron::new(&nc);
 /// ```
-/// 
-/// 
-///
 #[derive(Clone, Debug)]
 pub struct LifNeuron { // TODO: public fields?
+    /// Rest potential
     v_rest: f64,
+    /// Reset potential
     v_reset: f64,
+    /// Threshold potential
     v_threshold: f64,
+    /// Membrane's time constant. This is the product of its capacity and resistance
     tau: f64,
 }
 
@@ -40,24 +45,20 @@ impl From<&LifNeuron> for LifSolverVars {
     }
 }
 
-/// LifNeuronConfig
-/// ------------
-/// 
 /// A struct used to create a specific configuration, simply reusable for other neurons
 /// 
-/// Example
-/// --------
+/// # Examples
 /// 
 /// ```
-/// let config_one = LifNeuronConfig::new(parm1, parm2, ...);
-/// let config_two = LifNeuronConfig::new(parm1, parm2, ...);
+/// # use pds_spiking_nn::lif::*;
+/// let config_one = LifNeuronConfig::new(0.9, 0.3, 2.5, 1.3);
+/// let config_two = LifNeuronConfig::new(1.3, 0.6, 2.6, 0.9);
 /// 
-/// let neuron_one = LifNeuron::new(config_one);
-/// let neuron_two = LifNeuron::new(config_one);
-///     ...
-/// let neuron_four = LifNeuron::new(config_two);
+/// let neuron_one = LifNeuron::new(&config_one);
+/// let neuron_two = LifNeuron::new(&config_one);
+/// // ...
+/// let neuron_four = LifNeuron::new(&config_two);
 /// ```
-///
 #[derive(Clone, Debug)]
 pub struct LifNeuronConfig {
     v_rest: f64,
@@ -72,6 +73,7 @@ impl From<&LifNeuronConfig> for LifNeuron {
     }
 }
 
+/// Simd aggregate of four `LifNeuron`s
 #[cfg(feature = "simd")]
 pub struct LifNeuronx4 {
     v_rest: packed_simd::f64x4,
@@ -80,12 +82,16 @@ pub struct LifNeuronx4 {
     tau: packed_simd::f64x4
 }
 
+/// Simd aggregate of four `LifSolverVars`
 #[cfg(feature = "simd")]
 pub struct LifSolverVarsx4 {
     v_mem: packed_simd::f64x4,
     ts_old: packed_simd::f64x4
 }
 
+/// Model provided by this library as example.
+/// 
+/// You can this empty type to construct lif NNs, see the documentation at [NNBuilder](crate::NNBuilder) for details.
 #[derive(Clone, Copy, Debug)]
 pub struct LeakyIntegrateFire;
 
@@ -95,36 +101,31 @@ impl Model for LeakyIntegrateFire {
     type Config = LifNeuronConfig;
 
     /// Update the value of current membrane tension, reading any new spike.
-    /// When the neuron receives one or more impulses, it compute the new tension of the membrane,
-    /// thanks to a specific configurable model.
+    /// When the neuron receives one or more impulses, it computes the new tension of the membrane,
+    /// and saves the updated value in the provided `SolverVars` variable.
     /// 
-    /// See **LifNeuron** struct for further info
+    /// See [LifNeuron] struct for further info.
     /// 
-    ///# Example
-    /// _The following example is also a recomend usage template for layer made up of these neurons._
+    /// # Examples
+    /// We create a general Neuron, called _neuron_one_.
     /// 
-    /// We create a general Neuron, called **neuron one**.
+    /// This neuron receives a spike at time of spike _ts_ from a number of its input synapses.
+    /// The overall weighted input value of this spike (i.e. the sum, across every lit up input synapse,
+    /// of the weight of that synapse) is provided via the _weighted_input_val_ parameter.
     /// 
-    /// This neuron has (as Input) an associated cell of the spike vector
-    /// created at time t+dt by the previous layer which is supposed to be 
-    /// **weighted_spike_val[[1]]**.
+    /// The output of this function is 1.0 iff the neuron has generated a new spike at time _ts_, or 0.0 otherwise.
     /// 
-    /// Instead **time_of_spike** represents the actual instant when the spike occurs/takes place.
-    ///
-    /// Finally **out_spike_train[[1]]** is a cell of an array which contains each spike generated 
-    /// from neurons of this same layer.
     /// ```
-    ///     let weighted_spike_val: Vec<f64> = [val1, val2, ...].to_vec();
-    ///     let mut out_spike_train: Vec<f64> = Vec::new();
+    /// # use pds_spiking_nn::{Model, lif::*};
+    /// let config_one = LifNeuronConfig::new(1.1, 0.4, 2.4, 1.1);
+    /// let neuron_one = LifNeuron::new(&config_one);
+    /// # let ts = 1;
+    /// # let weighted_input_val = 1.0;
+    /// # let mut vars = From::from(&neuron_one);
     /// 
-    ///     let config_one = LifNeuronConfig::new(parm1, parm2, ...);
-    ///     let neuron_one = LifNeuron::new(config_one);
-    /// 
-    ///     neuron_one.update_v_mem(time_of_spike, weighted_spike_val[1], &mut out_spike_train[1])
+    /// let output = LeakyIntegrateFire::handle_spike(&neuron_one, &mut vars, weighted_input_val, ts);
+    /// assert!(output == 0.0 || output == 1.0);
     /// ```
-    /// After this code, the neuron may possibly have fired the spike.
-    
-    //TODO Cambiare da Option<Spike> a 1 o 0 per uso interno per andare a creare il vettore di output da moltiplicare con la matrice
     #[inline]
     fn handle_spike(neuron: &LifNeuron, vars: &mut LifSolverVars, weighted_input_val: f64, ts: u128) -> f64 {
         // This early exit serves as a small optimization
@@ -136,11 +137,8 @@ impl Model for LeakyIntegrateFire {
         //calcola il nuovo val
         vars.v_mem = neuron.v_rest + (vars.v_mem - neuron.v_rest) * (-delta_t / neuron.tau).exp() + weighted_input_val;
 
-        if vars.v_mem > neuron.v_threshold {                       //TODO 
+        if vars.v_mem > neuron.v_threshold {
             vars.v_mem = neuron.v_reset;
-
-            //TODO change return...
-            //Fire Spike
             1. 
         } else {
             0.
@@ -175,10 +173,13 @@ impl Model for LeakyIntegrateFire {
     fn handle_spike_x4(neurons: &Self::Neuronx4, vars: &mut Self::SolverVarsx4, weighted_input_vals: packed_simd::f64x4, ts: u128) -> packed_simd::f64x4 {
         use packed_simd::f64x4;
 
+        // Mixing u128x4 (512 bit vectors) with f64x4 (256 bit vectors) pretty much nullifies any performance improvement
+        // that we may get from explicit simd (on systems without AVX-512 or similar anyway)
         let ts = f64x4::splat(ts as _);
         let dt: f64x4 = ts - vars.ts_old;
         vars.ts_old = ts;
         
+        // The exp() right here is the only reason why I went with packed_simd instead of the portable_simd in std
         vars.v_mem = neurons.v_rest + (vars.v_mem - neurons.v_rest) * (-dt / neurons.tau).exp() + weighted_input_vals;
 
         let fired = vars.v_mem.gt(neurons.v_threshold);
@@ -191,7 +192,18 @@ impl Model for LeakyIntegrateFire {
 // IMPLEMENTATION FOR LIF NEURONS & LIF NEURON CONFIG
 
 impl LifNeuron {
-    pub fn new(nc: &LifNeuronConfig ) -> LifNeuron {
+    /// Create a new `LifNeuron` from a reference to a `LifNeuronConfig`.
+    /// 
+    /// The same conversion can be obtained via the impl of `From<&LifNeuronConfig> for LifNeuron`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::lif::*;
+    /// let config = LifNeuronConfig::new(1.0, 0.5, 2.0, 1.0);
+    /// let neuron = LifNeuron::new(&config);
+    /// ```
+    pub fn new(nc: &LifNeuronConfig) -> LifNeuron {
         LifNeuron {
             // parameters
             v_rest:  nc.v_rest,
@@ -201,17 +213,53 @@ impl LifNeuron {
         }
     }
 
-    /// Create a new array of Neuron structs, starting from a given array of NeuronConfig.
+    /// Create a new array of `LifNeuron` structs, starting from a given array of `LifNeuronConfig`.
     /// 
-    /// If the array of NeuronConfig contains a single element, it will be used for 
-    /// all the _'dim'_ neurons required.
+    /// If _ncs_ contains a single element, it will be used for 
+    /// all the _dim_ neurons required.
     /// Otherwise it will create a Neuron for each specified NeuronConfig
     /// 
     /// # Panics
+    /// 
     /// Panics if the NeuronConfig array has a lenght (greater than one) 
     /// which differs from _'dim'_.
+    /// 
+    /// # Examples
+    /// 
+    /// Create many identical neurons from a single config:
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::lif::*;
+    /// let config = vec![LifNeuronConfig::new(1.0, 0.5, 2.0, 1.0)];
+    /// let neurons = LifNeuron::new_vec(config, 10);
+    /// 
+    /// assert_eq!(neurons.len(), 10);
+    /// ```
+    /// Create many different neurons from an array of different configs:
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::lif::*;
+    /// let configs = vec![
+    ///     LifNeuronConfig::new(1.0, 0.5, 2.0, 1.0),
+    ///     LifNeuronConfig::new(1.1, 0.4, 2.1, 0.9),
+    ///     LifNeuronConfig::new(1.2, 0.3, 2.2, 0.8)
+    /// ];
+    /// let neurons = LifNeuron::new_vec(configs, 3);
+    /// 
+    /// assert_eq!(neurons.len(), 3);
+    /// ```
+    /// Panics if dimensions don't match up:
+    /// 
+    /// ```should_panic
+    /// # use pds_spiking_nn::lif::*;
+    /// let configs = vec![
+    ///     LifNeuronConfig::new(1.0, 0.5, 2.0, 1.0),
+    ///     LifNeuronConfig::new(1.1, 0.4, 2.1, 0.9),
+    ///     LifNeuronConfig::new(1.2, 0.3, 2.2, 0.8)
+    /// ];
+    /// let neurons = LifNeuron::new_vec(configs, 10); // Panic! expected 3, received 10
+    /// ```
     pub fn new_vec(ncs: Vec<LifNeuronConfig>, dim: usize) -> Vec<LifNeuron>{
-        
         let mut res: Vec<LifNeuron> = Vec::with_capacity(dim);
 
         // you can specify a single NeuronConfig block 
@@ -233,18 +281,27 @@ impl LifNeuron {
         }
 
         res
-        
     }
 
 }
 
 impl LifNeuronConfig {
+    /// Create a new `LifNeuronConfig`, which can be used to build one or more identical neurons.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::lif::*;
+    /// let config = LifNeuronConfig::new(1.0, 0.5, 2.0, 1.0);
+    /// let neuron: LifNeuron = From::from(&config);
+    /// ```
     pub fn new(
         v_rest: f64,
         v_reset: f64,
         v_threshold: f64,
-        tau: f64,) -> LifNeuronConfig{
-
+        tau: f64
+    ) -> LifNeuronConfig
+    {
         LifNeuronConfig{
             v_rest,
             v_reset,
