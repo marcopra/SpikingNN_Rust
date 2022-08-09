@@ -41,7 +41,7 @@ fn create_random_lif_nn(seed: u64, num_layers: NonZeroUsize, layer_size_range: R
         .into_iter()
         .map(|u| u as u128)
         .for_each(|ts| {
-            spikes[rng.gen_range(0..nn.layers[0].neurons.len())].push(ts); // TODO: add support for simultaneous spikes to different entry neurons
+            spikes[rng.gen_range(0..nn.layers[0].neurons.len())].push(ts);
         });
 
     let spikes = spikes.into_iter().enumerate().map(|(i, s)| Spike::spike_vec_for(i, s)).collect();

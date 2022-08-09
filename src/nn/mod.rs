@@ -282,8 +282,10 @@ impl<M: Model> NN<M> {
     ///     .build();
     /// 
     /// // Get a mutable reference to the second neuron of the only layer of the nn
-    /// let neuron = nn.get_neuron_mut(0, 1);
-    /// # // TODO: no method for LifNeuron currently borrows self as mutable
+    /// let mut neuron = nn.get_neuron_mut(0, 1).unwrap();
+    /// neuron.v_rest += 0.2;
+    /// 
+    /// assert_eq!(nn[0][1].v_rest, 1.2);
     /// ```
     pub fn get_neuron_mut(&mut self, layer: usize, neuron: usize) -> Option<&mut M::Neuron> {
         self.layers.get_mut(layer)?.neurons.get_mut(neuron)
