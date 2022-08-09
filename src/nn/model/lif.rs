@@ -18,15 +18,15 @@ use crate::Model;
 /// let neuron = LifNeuron::new(&nc);
 /// ```
 #[derive(Clone, Debug)]
-pub struct LifNeuron { // TODO: public fields?
+pub struct LifNeuron {
     /// Rest potential
-    v_rest: f64,
+    pub v_rest: f64,
     /// Reset potential
-    v_reset: f64,
+    pub v_reset: f64,
     /// Threshold potential
-    v_threshold: f64,
+    pub v_threshold: f64,
     /// Membrane's time constant. This is the product of its capacity and resistance
-    tau: f64,
+    pub tau: f64,
 }
 
 /// A struct with variables only used in simulation (solve)

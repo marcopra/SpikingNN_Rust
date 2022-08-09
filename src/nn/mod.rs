@@ -114,7 +114,6 @@ impl Spike {
             }
         }
         res.sort(); //ascending
-        //TODO cancellare? res.sort_by(|a, b| a.ts.partial_cmp(&b.ts));
     
         res
     }
@@ -500,6 +499,57 @@ impl<M: Model> NN<M> {
     pub fn concat(&self, other: &Self, intra_nn_weights: impl Borrow<[f64]>) -> Result<Self, NNConcatError> {
         let mut new_nn = self.clone();
         new_nn.extend(other, intra_nn_weights).map(|_| new_nn)
+    }
+
+    /// Returns an iterator over references of every layer
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// let mut iterator = nn.iter();
+    /// assert!(iterator.next().is_some());
+    /// assert!(iterator.next().is_none());
+    /// ```
+    pub fn iter(&self) -> <&Vec<Layer<M>> as IntoIterator>::IntoIter {
+        self.into_iter()
+    }
+
+    /// Returns an iterator over mutable references of every layer
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use pds_spiking_nn::{NNBuilder, lif::*};
+    /// let mut nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+    ///     .layer(
+    ///         [
+    ///             LifNeuron::new(&LifNeuronConfig::new(1.0, 0.5, 3.0, 1.2)),
+    ///             From::from(&LifNeuronConfig::new(1.0, 0.4, 3.1, 1.1))
+    ///         ],
+    ///         [1.5, 1.8],
+    ///         [[0.0, -0.3], [-0.2, 0.0]]
+    ///     )
+    ///     .build();
+    /// 
+    /// let mut iterator = nn.iter_mut();
+    /// 
+    /// iterator.next().unwrap()[0].v_rest += 1.0;
+    /// assert!(iterator.next().is_none());
+    /// ```
+    pub fn iter_mut(&mut self) -> <&mut Vec<Layer<M>> as IntoIterator>::IntoIter {
+        self.into_iter()
     }
 }
 

@@ -5,13 +5,13 @@
 
 //! # PdS-SpikingNN
 //! 
-//! This Rust library can create and resolve spiking neural networks defined for any possible applicable model, thanks to the powerful extensibility achieved through Rust's type system: simply implement the `Model` trait for your personally defined custom model and be good to go!
+//! This Rust library can create and resolve spiking neural networks defined for any possible applicable model, thanks to the powerful extensibility achieved through Rust's type system: simply implement the [Model] trait for your personally defined custom model and be good to go!
 //! 
-//! By default, the **_Leaky Integrate and Fire_** model is provided in the `lif` submodule.
+//! By default, the **_Leaky Integrate and Fire_** model is provided in the [lif] submodule.
 //! 
 //! ## Getting started
 //! 
-//! Create a new neural network via the `NNBuilder`; this type can either perform static, compile-time checks on the size of the different layers of the network or, in case the nn's size can not be known at compile time, a _dynamic_ variant of the builder (which does size checks at runtime and can therefore return errors) can be used.
+//! Create a new neural network via the [NNBuilder]; this type can either perform static, compile-time checks on the size of the different layers of the network or, in case the nn's size can not be known at compile time, a _dynamic_ variant of the builder (which does size checks at runtime and can therefore return errors) can be used.
 //! 
 //! ### Create a neural network statically
 //! 
@@ -72,11 +72,11 @@
 //!     .build();
 //! ```
 //! 
-//! The same neural network can be created dynamically with `NNBuilder::new_dynamic`.
+//! The same neural network can be created dynamically with [new_dynamic](NNBuilder::new_dynamic).
 //! 
 //! ### Define the input spikes that will stimulate the network
 //! 
-//! The `NN::solve` method requires spikes to be passed as a single `Vec` of `Spike` instances. Spikes can be either created manually, or through the provided helper functions. The latter method is shown in the next example.
+//! The [NN::solve] method requires spikes to be passed as a single [Vec] of [Spike] instances. Spikes can be either created manually, or through the provided helper functions. The latter method is shown in the next example.
 //! 
 //! ```
 //! # use pds_spiking_nn::{NNBuilder, lif::*};
@@ -129,7 +129,7 @@
 //! 
 //! ### Solve the network
 //! 
-//! Finally, call the `NN::solve` method with the spikes `Vec` to "solve" the network and get as output the timestamps of every generated spike in the output layer, for every neuron.
+//! Finally, call the [NN::solve] method with the spikes [Vec] to "solve" the network and get as output the timestamps of every generated spike in the output layer, for every neuron.
 //! 
 //! ```
 //! # use pds_spiking_nn::{NNBuilder, lif::*};
@@ -180,8 +180,8 @@
 //! 
 //! This crate provides the following cargo features, which can be enabled at will:
 //! 
-//!  - **async** - `NN::solve` becomes an async function, which can be run with your favorite runtime. Internally, the implementation uses [tokio](https://crates.io/crates/tokio), and will spawn tokio `task`s in place of threads. The rationale for this is that, on larger networks, the parallelization strategy of firing a kernel thread for every layer will quickly result in hundreds if not thousands of threads, thus producing massive overhead due to the context switch between all of them. By employing _green threads_ (in the form of tasks), the user can effectively spread their allocation on a more reasonable number of kernel threads, hence dramatically improving the performance.  _If you enable this feature, remember to `.await` the `Future` returned by `NN::solve`!_
-//!   - **simd** - enable explicit SIMD support for the solver through [packed_simd](https://github.com/rust-lang/packed_simd) (**_this requires the latest nightly compiler_**). If this feature flag is enabled, the `Model` trait will require the "x4" version of the `Neuron` and `SolverVars` types, together with their respective `handle_spike` function. The default implementation of the _lif_ model will exploit 256 bit wide vectorization extensions, like `AVX` on x86 platforms. _To obtain the most out of this feature, remember to enable the necessary extensions for rustc through, for example, the "-C target-features" compiler flag._
+//!  - **async** - [NN::solve] becomes an async function, which can be run with your favorite runtime. Internally, the implementation uses [tokio](https://crates.io/crates/tokio), and will spawn tokio `task`s in place of threads. The rationale for this is that, on larger networks, the parallelization strategy of firing a kernel thread for every layer will quickly result in hundreds if not thousands of threads, thus producing massive overhead due to the context switch between all of them. By employing _green threads_ (in the form of tasks), the user can effectively spread their allocation on a more reasonable number of kernel threads, hence dramatically improving the performance.  _If you enable this feature, remember to `.await` the `Future` returned by [NN::solve]!_
+//!   - **simd** - enable explicit SIMD support for the solver through [packed_simd](https://github.com/rust-lang/packed_simd) (**_this requires the latest nightly compiler_**). If this feature flag is enabled, the `Model` trait will require the "x4" version of the [Neuron](Model::Neuron) and [SolverVars](Model::SolverVars) types, together with their respective `handle_spike` function. The default implementation of the _lif_ model will exploit 256 bit wide vectorization extensions, like `AVX` on x86 platforms. _To obtain the most out of this feature, remember to enable the necessary extensions for rustc through, for example, the "-C target-features" compiler flag._
 //! 
 //! Neither of these features are enabled by default, but their usage is strongly recommended when possible due to the performance improvement they can provide. See the [Performance](#performance) section for details.
 //! 

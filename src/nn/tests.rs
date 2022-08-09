@@ -49,45 +49,6 @@ fn create_random_lif_nn(seed: u64, num_layers: NonZeroUsize, layer_size_range: R
     (nn, Spike::create_terminal_vec(spikes))
 }
 
-#[test]
-fn test_spike_vec_for(){
-    // TODO: ???
-}
-
-#[test]
-fn test_sort_spike(){
-    let ts1 = [0, 1, 4, 5].to_vec();
-    let ts2 = [0, 3, 6, 7].to_vec();
-    let mut multiple_spike_vec : Vec<Vec<Spike>> = Vec::new();
-    
-    let spike1 = Spike::spike_vec_for(1, ts1);
-    let spike2 = Spike::spike_vec_for(2, ts2);
-
-    multiple_spike_vec.push(spike1);
-    multiple_spike_vec.push(spike2);
-
-    let input_vec = Spike::create_terminal_vec(multiple_spike_vec);
-
-    for el in input_vec.iter(){
-        println!("{:?}", el);
-    }
-}
-
-#[test]
-fn test_create_terminal_vec(){
-    let spikes_neuron_1 = [11, 9, 23, 43, 42].to_vec();
-    let spike_vec_for_neuron_1 = Spike::spike_vec_for(1, spikes_neuron_1 );
-    
-    let spikes_neuron_2 = [1, 29, 3, 11, 22].to_vec();
-    let spike_vec_for_neuron_2 = Spike::spike_vec_for(2, spikes_neuron_2 );
-    
-    let spikes: Vec<Vec<Spike>> = [spike_vec_for_neuron_1, 
-                                        spike_vec_for_neuron_2].to_vec();
-    
-    let sorted_spike_array_for_nn: Vec<Spike> = Spike::create_terminal_vec(spikes);
-    println!("{:?}", sorted_spike_array_for_nn);
-}
-
 #[cfg(not(feature = "async"))]
 #[test]
 fn test_tiny_sync() {
