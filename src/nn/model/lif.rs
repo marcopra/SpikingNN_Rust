@@ -7,7 +7,7 @@ use crate::Model;
 /// 
 /// # Examples
 /// 
-/// Create a single neuron through a `LifNeuronConfig`:
+/// Create a single neuron through a [LifNeuronConfig]:
 /// 
 /// ```
 /// # use pds_spiking_nn::lif::*;
@@ -73,7 +73,7 @@ impl From<&LifNeuronConfig> for LifNeuron {
     }
 }
 
-/// Simd aggregate of four `LifNeuron`s
+/// Simd aggregate of four [LifNeuron]s
 #[cfg(feature = "simd")]
 pub struct LifNeuronx4 {
     v_rest: packed_simd::f64x4,
@@ -82,7 +82,7 @@ pub struct LifNeuronx4 {
     tau: packed_simd::f64x4
 }
 
-/// Simd aggregate of four `LifSolverVars`
+/// Simd aggregate of four [LifSolverVars]
 #[cfg(feature = "simd")]
 pub struct LifSolverVarsx4 {
     v_mem: packed_simd::f64x4,
@@ -192,7 +192,7 @@ impl Model for LeakyIntegrateFire {
 // IMPLEMENTATION FOR LIF NEURONS & LIF NEURON CONFIG
 
 impl LifNeuron {
-    /// Create a new `LifNeuron` from a reference to a `LifNeuronConfig`.
+    /// Create a new [LifNeuron] from a reference to a [LifNeuronConfig].
     /// 
     /// The same conversion can be obtained via the impl of `From<&LifNeuronConfig> for LifNeuron`.
     /// 
@@ -213,7 +213,7 @@ impl LifNeuron {
         }
     }
 
-    /// Create a new array of `LifNeuron` structs, starting from a given array of `LifNeuronConfig`.
+    /// Create a new array of [LifNeuron] structs, starting from a given array of [LifNeuronConfig].
     /// 
     /// If _ncs_ contains a single element, it will be used for 
     /// all the _dim_ neurons required.
@@ -286,7 +286,7 @@ impl LifNeuron {
 }
 
 impl LifNeuronConfig {
-    /// Create a new `LifNeuronConfig`, which can be used to build one or more identical neurons.
+    /// Create a new [LifNeuronConfig], which can be used to build one or more identical neurons.
     /// 
     /// # Examples
     /// 

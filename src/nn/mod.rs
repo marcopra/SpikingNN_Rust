@@ -30,14 +30,13 @@ impl Spike {
     /// 
     /// # Examples
     /// 
-    /// Create a `Spike` at instant 18 for neuron 3:
+    /// Create a [Spike] at instant 18 for neuron 3:
     /// 
     /// ```
     /// # use pds_spiking_nn::Spike;
     /// let spike = Spike::new(18, 3);
     /// assert_eq!(spike, Spike { ts: 18, neuron_id: 3 });
     /// ```
-    //Di interfaccia
     pub fn new(ts: u128, neuron_id: usize) -> Spike {
         Spike {
             ts,
@@ -45,13 +44,12 @@ impl Spike {
         }
     }
 
-    //Di interfaccia
     /// Create an array of spikes for a single neuron, given its ID.
     /// The `ts_vec` does not need to be ordered.
     /// 
     /// # Examples
     /// 
-    /// Construct a `Vec` of `Spike`s for neuron 2 from an unordered set of timestamps:
+    /// Construct a [Vec] of [Spike]s for neuron 2 from an unordered set of timestamps:
     /// 
     /// ```
     /// # use pds_spiking_nn::Spike;
@@ -125,7 +123,7 @@ impl fmt::Display for Spike {
     }
 }
 
-/// Error for `NN`'s `concat` and `extend`.
+/// Error for [NN]'s [concat](NN::concat) and [extend](NN::extend).
 /// 
 /// Only one variant is needed because only one kind of error can happen.
 #[derive(Error, Debug)]
@@ -136,12 +134,12 @@ pub enum NNConcatError {
 
 /// The Neural Network itself.
 /// 
-/// This organizes `Neuron`s into consecutive layers, each constituted of some amount of `Neuron`s.
-/// `Neuron`s of the same or consecutive layers are connected by a weighted synapse (f64).
+/// This organizes [Neuron](Model::Neuron)s into consecutive layers, each constituted of some amount of [Neuron](Model::Neuron)s.
+/// [Neuron](Model::Neuron)s of the same or consecutive layers are connected by a weighted synapse [f64].
 /// 
-/// A neural network is stimulated by `Spike`s applied to the `Neuron`s of its entry layer.
+/// A neural network is stimulated by [Spike]s applied to the [Neuron](Model::Neuron)s of its entry layer.
 /// 
-/// Create a new `NN` through the builder at `NNBuilder`.
+/// Create a new [NN] through the builder at [NNBuilder](crate::NNBuilder).
 #[derive(Clone)]
 pub struct NN<M: Model> {
     /// All the sorted layers of the neural network
@@ -152,7 +150,7 @@ impl<M: Model> NN<M> {
     /// Return the number of layers in this neural network.
     /// 
     /// This is always guaranteed to be greater than zero
-    /// by the `NNBuilder` necessary to construct an instance of `NN`.
+    /// by the [NNBuilder](crate::NNBuilder) necessary to construct an instance of [NN].
     /// 
     /// # Examples
     /// 
@@ -176,9 +174,9 @@ impl<M: Model> NN<M> {
         self.layers.len()
     }
 
-    /// Get the specified layer, or `None` if the index is out of bounds.
+    /// Get the specified layer, or [None] if the index is out of bounds.
     /// 
-    /// An unchecked variant of this functionality is provided via the `Index` implementation.
+    /// An unchecked variant of this functionality is provided via the [Index] implementation.
     /// 
     /// # Examples
     /// 
@@ -205,9 +203,9 @@ impl<M: Model> NN<M> {
         self.layers.get(layer)
     }
 
-    /// Get a mutable reference to the specified layer, or `None` if the index is out of bounds.
+    /// Get a mutable reference to the specified layer, or [None] if the index is out of bounds.
     /// 
-    /// An unchecked variant of this functionality is provided via the `IndexMut` implementation.
+    /// An unchecked variant of this functionality is provided via the [IndexMut] implementation.
     /// 
     /// # Examples
     /// 
@@ -234,9 +232,9 @@ impl<M: Model> NN<M> {
         self.layers.get_mut(layer)
     }
 
-    /// Get the neuron at the specified position of the specified layer, or `None` if any index is out of bounds.
+    /// Get the neuron at the specified position of the specified layer, or [None] if any index is out of bounds.
     /// 
-    /// An unchecked variant of this functionality is provided via the `Index` implementation.
+    /// An unchecked variant of this functionality is provided via the [Index] implementation.
     /// 
     /// # Examples
     /// 
@@ -263,9 +261,9 @@ impl<M: Model> NN<M> {
         self.layers.get(layer)?.neurons.get(neuron)
     }
 
-    /// Get a mutable reference to the neuron at the specified position of the specified layer, or `None` if any index is out of bounds.
+    /// Get a mutable reference to the neuron at the specified position of the specified layer, or [None] if any index is out of bounds.
     /// 
-    /// An unchecked variant of this functionality is provided via the `IndexMut` implementation.
+    /// An unchecked variant of this functionality is provided via the [IndexMut] implementation.
     /// 
     /// # Examples
     /// 
@@ -346,9 +344,9 @@ impl<M: Model> NN<M> {
     /// Get the intra or input weight determined by the `from` and `to` neurons.
     /// 
     /// The given neurons must be of the same or consecutive layers, otherwise this function will
-    /// return `None`.
+    /// return [None].
     /// 
-    /// An unchecked variant of this functionality is provided via the `Index` implementation.
+    /// An unchecked variant of this functionality is provided via the [Index] implementation.
     /// 
     /// # Examples
     /// 
@@ -385,9 +383,9 @@ impl<M: Model> NN<M> {
     /// Get a mutable reference to the intra or input weight determined by the `from` and `to` neurons.
     /// 
     /// The given neurons must be of the same or consecutive layers, otherwise this function will
-    /// return `None`.
+    /// return [None].
     /// 
-    /// An unchecked variant of this functionality is provided via the `IndexMut` implementation.
+    /// An unchecked variant of this functionality is provided via the [IndexMut] implementation.
     /// 
     /// # Examples
     /// 
@@ -422,7 +420,7 @@ impl<M: Model> NN<M> {
         }
     }
 
-    /// Extend this `NN` in place by appending the other provided network to it.
+    /// Extend this`[NN] in place by appending the other provided network to it.
     /// 
     /// The two neural networks are merged via the provided new input weights, which will replace `other`'s.
     /// 
@@ -470,7 +468,7 @@ impl<M: Model> NN<M> {
         Ok(())
     }
 
-    /// Concatenate this `NN` with another one, to obtain a new `NN`.
+    /// Concatenate this [NN] with another one, to obtain a new [NN].
     /// 
     /// The two neural networks are merged via the provided new input weights, which will replace `other`'s.
     /// 

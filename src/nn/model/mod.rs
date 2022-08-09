@@ -31,7 +31,7 @@ pub trait Model: 'static + Debug + Clone {
     #[cfg(feature = "simd")]
     type SolverVarsx4: Send;
     
-    /// Generate a `Neuronx4` from 4 `Neuron`s.
+    /// Generate a [Neuronx4] from 4 [Neuron]s.
     /// 
     /// # Panics
     /// 
@@ -39,7 +39,7 @@ pub trait Model: 'static + Debug + Clone {
     #[cfg(feature = "simd")]
     fn neuron_x4_from_neurons(neurons: &[Self::Neuron]) -> Self::Neuronx4;
 
-    /// Generate a `SolverVarsx4` from 4 `SolverVar`s.
+    /// Generate a [SolverVarsx4] from 4 [SolverVars].
     /// 
     /// # Panics
     /// 
@@ -52,7 +52,7 @@ pub trait Model: 'static + Debug + Clone {
     fn handle_spike_x4(neurons: &Self::Neuronx4, vars: &mut Self::SolverVarsx4, weighted_input_val: packed_simd::f64x4, ts: u128) -> packed_simd::f64x4;
 }
 
-/// A type is `RefInto<T>` if its reference can be converted to `T`.
+/// A type is [RefInto<T>] if its reference can be converted to `T`.
 /// 
 /// Unfortunately, the Rust compiler currently has trouble keeping track of bounds of this kind,
 /// so every time this bound is needed, it's necessary to explicitly "request" it.

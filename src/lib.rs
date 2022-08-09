@@ -1,8 +1,6 @@
 // Benchmarks can be run with `cargo +nightly bench --features bench`
 #![cfg_attr(feature = "bench", feature(test))]
 
-// TODO: switch to links for documentation comments (from `Spike` to [Spike])?
-
 //! # PdS-SpikingNN
 //! 
 //! This Rust library can create and resolve spiking neural networks defined for any possible applicable model, thanks to the powerful extensibility achieved through Rust's type system: simply implement the [Model] trait for your personally defined custom model and be good to go!

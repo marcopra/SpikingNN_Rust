@@ -19,7 +19,7 @@ pub struct Layer<M: Model> {
 }
 
 impl<M: Model> Layer<M> {
-    /// Return the number of neurons in this `Layer`
+    /// Return the number of neurons in this [Layer]
     /// 
     /// # Examples
     /// 
@@ -43,9 +43,9 @@ impl<M: Model> Layer<M> {
         self.neurons.len()
     }
 
-    /// Get the specified neuron, or `None` if the index is out of bounds.
+    /// Get the specified neuron, or [None] if the index is out of bounds.
     /// 
-    /// An unchecked variant of this functionality is provided via the `Index` implementation.
+    /// An unchecked variant of this functionality is provided via the [Index] implementation.
     /// 
     /// # Examples
     /// 
@@ -70,9 +70,9 @@ impl<M: Model> Layer<M> {
         self.neurons.get(neuron)
     }
 
-    /// Get a mutable reference to the specified neuron, or `None` if the index is out of bounds.
+    /// Get a mutable reference to the specified neuron, or [None] if the index is out of bounds.
     /// 
-    /// An unchecked variant of this functionality is provided via the `IndexMut` implementation.
+    /// An unchecked variant of this functionality is provided via the [IndexMut] implementation.
     /// 
     /// # Examples
     /// 
@@ -97,9 +97,9 @@ impl<M: Model> Layer<M> {
         self.neurons.get_mut(neuron)
     }
 
-    /// Get the intra-layer weight from and to the specified neurons, or `None` if any index is out of bounds.
+    /// Get the intra-layer weight from and to the specified neurons, or [None] if any index is out of bounds.
     /// 
-    /// An unchecked variant of this functionality is provided via the `Index` implementation.
+    /// An unchecked variant of this functionality is provided via the [Index] implementation.
     /// 
     /// # Examples
     /// 
@@ -124,9 +124,9 @@ impl<M: Model> Layer<M> {
         self.intra_weights.get((from, to)).copied()
     }
 
-    /// Get a mutable reference to the intra-layer weight from and to the specified neurons, or `None` if any index is out of bounds.
+    /// Get a mutable reference to the intra-layer weight from and to the specified neurons, or [None] if any index is out of bounds.
     /// 
-    /// An unchecked variant of this functionality is provided via the `IndexMut` implementation.
+    /// An unchecked variant of this functionality is provided via the [IndexMut] implementation.
     /// 
     /// # Examples
     /// 

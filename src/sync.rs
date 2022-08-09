@@ -9,27 +9,27 @@ use ndarray::Array2;
 
 use crate::{nn::layer::Layer, Model};
 
-/// Linked with a `NN`'s `Layer`, this "solves" that layer.
+/// Linked with a [NN](crate::NN)'s [Layer], this "solves" that layer.
 /// 
-/// Spikes are received through an mpsc channel as `Array2`s of the previous layer's neurons' outputs.
+/// Spikes are received through an mpsc channel as [Array2]s of the previous layer's neurons' outputs.
 /// After applying said input to every neuron in this layer, an output array is constructed and passed to the next layer
-/// via a `Sender`, and the same spike is then reapplied to the same neurons via the intra-weights.
+/// via a [Sender], and the same spike is then reapplied to the same neurons via the intra-weights.
 /// 
-/// This struct's lifetime is that of the `NN` it references the `Layer` from.
+/// This struct's lifetime is that of the [NN](crate::NN) it references the [Layer] from.
 pub(crate) struct LayerManager<'a, M: Model> {
-    /// Reference to the `NN`'s `Layer` this manager is for
+    /// Reference to the [NN](crate::NN)'s [Layer] this manager is for
     layer: &'a Layer<M>,
-    /// `Vec` of the `SolverVar`s for every neuron in this layer.
-    /// `SolverVar`s contain the mutable portion of the neuron, which must be dynamic during the solve process.
+    /// [Vec] of the [SolverVars](Model::SolverVars) for every neuron in this layer.
+    /// [SolverVars](Model::SolverVars) contain the mutable portion of the neuron, which must be dynamic during the solve process.
     vars: Vec<M::SolverVars>,
-    /// Mpsc `Receiver` linked to the previous layer's sender
+    /// Mpsc [Receiver] linked to the previous layer's sender
     receiver: Receiver<(u128, Array2<f64>)>,
-    /// Mpsc `Sender` linked to the next layer's receiver
+    /// Mpsc [Sender] linked to the next layer's receiver
     sender: Sender<(u128, Array2<f64>)>,
 }
 
 impl<'a, M: Model> LayerManager<'a, M> where for<'b> &'b M::Neuron: Into<M::SolverVars> {
-    /// Build a new instance of `LayerManager` for the provided `Layer`.
+    /// Build a new instance of [LayerManager] for the provided [Layer].
     /// 
     /// `receiver` must be linked to the previous layer's manager, and `sender` to the next layer's receiver.
     pub fn new(

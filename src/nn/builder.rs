@@ -1,6 +1,6 @@
-//! Provides a `NNBuilder` type to create neural networks.
+//! Provides a [NNBuilder] type to create neural networks.
 //! 
-//! Building a neural network through a `NNBuilder` can not fail thanks to
+//! Building a neural network through a [NNBuilder] can not fail thanks to
 //! the robust integration with Rust's type system, which allows us to
 //! test validity at compile time.
 //! 
@@ -13,7 +13,7 @@ use thiserror::Error;
 use crate::{NN, Model};
 use super::layer::Layer;
 
-/// Used for compile-time checks of `NNBuilder`'s dimensions
+/// Used for compile-time checks of [NNBuilder]'s dimensions
 pub trait Dim: Copy { }
 
 /// For empty statically checked builders
@@ -31,7 +31,7 @@ impl<const N: usize> Dim for NotZero<N> { }
 pub struct Dynamic;
 impl Dim for Dynamic { }
 
-/// An error type for the dynamic variant of NNBuilder.
+/// An error type for the dynamic variant of [NNBuilder].
 /// All the error variants contain the builder that generated them, for reuse.
 #[derive(Error, Debug)]
 pub enum DynamicBuilderError<M: Model> {
@@ -42,7 +42,7 @@ pub enum DynamicBuilderError<M: Model> {
     InvalidSizes(NNBuilder<M, Dynamic>)
 }
 
-/// Helper type that implements the builder pattern for `NN`.
+/// Helper type that implements the builder pattern for [NN].
 /// 
 /// # Examples
 /// 
@@ -120,22 +120,22 @@ pub enum DynamicBuilderError<M: Model> {
 /// ```
 #[derive(Clone)]
 pub struct NNBuilder<M: Model, D: Dim> {
-    /// Inner, growing `NN`
+    /// Inner, growing [NN]
     nn: NN<M>,
-    /// Needed because of D, which would otherwise be unused
+    /// Needed because of `D`, which would otherwise be unused
     _phantom: PhantomData<D>,
 }
 
 impl<M: Model> NNBuilder<M, Dynamic> {
-    /// Create a new dynamically sized instance of `NNBuilder`.
-    /// Every instance of this type can be used to build one `NN`.
+    /// Create a new dynamically sized instance of [NNBuilder].
+    /// Every instance of this type can be used to build one [NN].
     /// 
-    /// In a dynamic `NNBuilder` size checks are performed at runtime, allowing for creation of `NN`s whose
+    /// In a dynamic [NNBuilder] size checks are performed at runtime, allowing for creation of [NN]s whose
     /// size is not known at compile time, at the small cost of the checks necessary to ensure its validity.
     /// 
     /// # Examples
     /// 
-    /// Create a new dynamic `NNBuilder`:
+    /// Create a new dynamic [NNBuilder]:
     /// 
     /// ```
     /// # use pds_spiking_nn::{NNBuilder, lif::*};
@@ -149,7 +149,7 @@ impl<M: Model> NNBuilder<M, Dynamic> {
     /// 
     /// Note: input and intra weights are flattened row-major matrices (one row for each neuron in the layer).
     /// 
-    /// This function can fail with `DynamicBuilderError::InvalidSizes` iff:
+    /// This function can fail with [DynamicBuilderError::InvalidSizes] iff:
     ///  - neurons.len() is zero
     ///  - input_weights.len() is not compatible with the previous layer's size and the current one
     ///  - intra_weights.len() is different from neurons.len() squared
@@ -226,9 +226,9 @@ impl<M: Model> NNBuilder<M, Dynamic> {
         Ok(self)
     }
 
-    /// Build the `NN`
+    /// Build the [NN]
     /// 
-    /// This function can fail with `DynamicBuilderError::EmptyNN` if called on an empty builder.
+    /// This function can fail with [DynamicBuilderError::EmptyNN] if called on an empty builder.
     /// 
     /// # Examples
     /// 
@@ -284,15 +284,15 @@ impl<M: Model> NNBuilder<M, Dynamic> {
 }
 
 impl<M: Model> NNBuilder<M, Zero> {
-    /// Create a new statically sized instance of `NNBuilder`.
-    /// Every instance of this type can be used to build one `NN`.
+    /// Create a new statically sized instance of [NNBuilder].
+    /// Every instance of this type can be used to build one [NN].
     /// 
-    /// In a static `NNBuilder` size checks are performed at compile time for maximum efficiency.
-    /// This has the obvious drawback of requiring that the sizes of the resulting `NN` be known at compile time as well.
+    /// In a static [NNBuilder] size checks are performed at compile time for maximum efficiency.
+    /// This has the obvious drawback of requiring that the sizes of the resulting [NN] be known at compile time as well.
     /// 
     /// # Examples
     /// 
-    /// Create a new static `NNBuilder`:
+    /// Create a new static [NNBuilder]:
     /// 
     /// ```
     /// # use pds_spiking_nn::{NNBuilder, lif::*};
@@ -303,8 +303,6 @@ impl<M: Model> NNBuilder<M, Zero> {
     }
 
     /// Add the entry layer to the neural network.
-    /// 
-    /// Note: diagonal intra-weights (i.e. from and to the same neuron) are ignored.
     /// 
     /// # Examples
     /// 
@@ -345,8 +343,6 @@ impl<M: Model> NNBuilder<M, Zero> {
 
 impl<M: Model, const LEN_LAST_LAYER: usize> NNBuilder<M, NotZero<LEN_LAST_LAYER>> {
     /// Add a layer to the neural network.
-    /// 
-    /// Note: diagonal intra-weights (i.e. from and to the same neuron) are ignored.
     pub fn layer<const N: usize>(
         mut self,
         neurons: impl Borrow<[M::Neuron; N]>,
@@ -364,7 +360,7 @@ impl<M: Model, const LEN_LAST_LAYER: usize> NNBuilder<M, NotZero<LEN_LAST_LAYER>
         self.morph()
     }
 
-    /// Build the `NN`.
+    /// Build the [NN].
     /// 
     /// # Examples
     /// 
@@ -408,7 +404,7 @@ impl<M: Model, const LEN_LAST_LAYER: usize> NNBuilder<M, NotZero<LEN_LAST_LAYER>
 }
 
 impl<M: Model, D: Dim> NNBuilder<M, D> {
-    /// Create a new, empty `NN`
+    /// Create a new, empty [NN]
     fn new_nn() -> NN<M> {
         NN {
             layers: vec![]
@@ -420,7 +416,7 @@ impl<M: Model, D: Dim> NNBuilder<M, D> {
         NNBuilder { nn: self.nn, _phantom: PhantomData }
     }
 
-    /// Build the `NN`.
+    /// Build the [NN].
     /// Note: we don't expose a global 'build' in order to:
     ///  - not allow building NNBuilder<Zero> variants
     ///  - allow checking dimensions at runtime for NNBuilder<Dynamic> variants
