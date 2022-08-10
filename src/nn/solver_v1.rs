@@ -382,9 +382,56 @@ where for <'a> &'a M::Neuron: Into<M::SolverVars> {
 #[cfg(test)]
 mod tests {
     
+    use crate::{lif::{LifNeuronConfig, LeakyIntegrateFire}, NNBuilder, Spike, nn::solver_v1::Solver};
+
     #[test]
     fn test_init_simulated_nn() {
+
+
+    }
+
+
+    #[test]
+    fn test_passthrough_nn_using_solver() {
+
+        let config = LifNeuronConfig::new(2.0, 0.5, 2.1, 1.0);
+    
+        let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+            .layer(
+                [
+                    From::from(&config),
+                    From::from(&config),
+                    From::from(&config)
+                ],
+                [
+                    1.0, 1.0, 1.0
+                ],
+                [
+                    [0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0]
+                ]
+            )
+            .build();
         
+        let spikes = Spike::create_terminal_vec(
+            vec![
+                Spike::spike_vec_for(0, vec![1, 2, 3, 5, 6, 7]),
+                Spike::spike_vec_for(1, vec![2, 6, 7, 9]),
+                Spike::spike_vec_for(2, vec![2, 5, 6, 10, 11])
+            ]
+        );
+
+        let mut solver = Solver::new(spikes, nn);
+
+        assert_eq!(
+            solver.solve(),
+            vec![
+                vec![1, 2, 3, 5, 6, 7],
+                vec![2, 6, 7, 9],
+                vec![2, 5, 6, 10, 11]
+            ]
+        );
     }
 
     #[test]
