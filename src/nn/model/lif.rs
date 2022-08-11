@@ -45,6 +45,15 @@ impl From<&LifNeuron> for LifSolverVars {
     }
 }
 
+impl LifSolverVars {
+
+    ///Get variables only used in simulation (solve) -> (v_mem, ts_old)
+    pub fn get_vars(&mut self) -> (f64, u128){
+
+        (self.v_mem, self.ts_old)
+    }
+}
+
 /// A struct used to create a specific configuration, simply reusable for other neurons
 /// 
 /// # Examples
