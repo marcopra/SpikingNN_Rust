@@ -143,7 +143,7 @@ impl Model for LeakyIntegrateFire {
         let delta_t: f64 = (ts - vars.ts_old) as f64;
         vars.ts_old = ts;
 
-        //calcola il nuovo val
+        // compute the new v_mem value
         vars.v_mem = neuron.v_rest + (vars.v_mem - neuron.v_rest) * (-delta_t / neuron.tau).exp() + weighted_input_val;
 
         if vars.v_mem > neuron.v_threshold {

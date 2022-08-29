@@ -130,7 +130,7 @@ impl<M: Model> NNBuilder<M, Dynamic> {
     /// Create a new dynamically sized instance of [NNBuilder].
     /// Every instance of this type can be used to build one [NN].
     /// 
-    /// In a dynamic [NNBuilder] size checks are performed at runtime, allowing for creation of [NN]s whose
+    /// In a dynamic [NNBuilder] size checks are performed at runtime, allowing for the creation of [NN]s whose
     /// size is not known at compile time, at the small cost of the checks necessary to ensure its validity.
     /// 
     /// # Examples
