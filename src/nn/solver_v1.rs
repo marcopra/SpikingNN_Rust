@@ -81,7 +81,7 @@ where for <'a> &'a M::Neuron: Into<M::SolverVars> {
         }
     
 
-        // miolad: changed return format to be compatible with parallel solver
+        // Computing the output of the NN
         let mut output = vec![vec![]; self.network.layers.last().unwrap().neurons.len()];
 
         for spike in nn_output {
@@ -173,7 +173,8 @@ where for <'a> &'a M::Neuron: Into<M::SolverVars> {
             let intra_layer_input_val = current_spike_vec.dot(&layer.intra_weights);
 
             // For each neuron in the layer, we use the `handle_spike` function given the neuron parameters and variables and 
-            // the computed input considering the intra-layer links. We can obtain a spike (`1`) or not (`0`) 
+            // the computed input considering the intra-layer links. We can obtain a spike (`1`) or not (`0`).
+            // Here, using `handle_spike`, we update the internal `vars` 
             for (i, neuron) in layer.neurons.iter().enumerate(){
                 
                 M::handle_spike(neuron, 
