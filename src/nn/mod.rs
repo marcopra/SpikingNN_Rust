@@ -626,7 +626,7 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
         // Read spikes from last layer and convert to proper format for output
         let mut res = vec![vec![]; self.layers.last().unwrap().neurons.len()];
         for (ts, spike) in receiver {
-            for (neuron_id, _) in spike.into_iter().enumerate().filter(|(_, v)| *v > 0.5) { // TODO: do we really want this?
+            for (neuron_id, _) in spike.into_iter().enumerate().filter(|(_, v)| *v > 0.5) {
                 res[neuron_id].push(ts);
             }
         }
@@ -714,7 +714,7 @@ impl<M: Model> NN<M> where for<'a> &'a M::Neuron: Into<M::SolverVars> {
         // Read spikes from last layer and convert to proper format for output
         let mut res = vec![vec![]; self.layers.last().unwrap().neurons.len()];
         while let Some((ts, spike)) = receiver.recv().await {
-            for (neuron_id, _) in spike.iter().enumerate().filter(|(_, v)| **v > 0.5) { // TODO: do we really want this?
+            for (neuron_id, _) in spike.iter().enumerate().filter(|(_, v)| **v > 0.5) {
                 res[neuron_id].push(ts);
             }
         }
