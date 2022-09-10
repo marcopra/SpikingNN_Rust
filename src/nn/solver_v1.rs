@@ -196,14 +196,13 @@ where for <'a> &'a M::Neuron: Into<M::SolverVars> {
     /// 
     /// # Example 
     /// 
-    /// ```
+    /// ```ignore
     /// # use ndarray::Array2;
     /// # use super::single_spike_to_vec;
     /// let neuron_id = 2; //The neuron ids start from 0
     /// let dim  = 4;
     /// 
     /// assert_eq!(single_spike_to_vec(neuron_id, dim).as_slice().unwrap(), &[0.0, 0.0, 1.0, 0.0]);
-    /// 
     /// ```  
     fn single_spike_to_vec(neuron_id: usize, dim: usize) -> ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> {
 
@@ -225,8 +224,8 @@ where for <'a> &'a M::Neuron: Into<M::SolverVars> {
         let mut res: Vec<u128> =  Vec::new();
 
         for &val in vec {
-            if val > 0.0 { res.push(val_to_set)}
-            else {res.push(u128::MAX)};
+            if val > 0.0 { res.push(val_to_set) }
+            else { res.push(u128::MAX) };
         }   
         res 
     }

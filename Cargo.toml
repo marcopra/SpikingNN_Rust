@@ -21,6 +21,9 @@ default = []
 bench = []
 async = ["dep:tokio"]
 simd = ["dep:packed_simd"]
+expose-test-solver = [] # Expose the test single threaded solver.
+                        # This is just for showing off an important part of the project in the demo,
+                        # it's not meant for general use.
 
 [profile.bench]
 codegen-units = 1

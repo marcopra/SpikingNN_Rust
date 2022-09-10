@@ -210,3 +210,6 @@ pub use nn::layer::Layer;
 pub use nn::builder::NNBuilder;
 pub use nn::model::Model;
 pub use nn::model::lif;
+
+#[cfg(feature = "expose-test-solver")]
+pub use nn::solver_v1 as test_solver;

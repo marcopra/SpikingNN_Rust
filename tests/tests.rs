@@ -349,3 +349,58 @@ fn test_nn_update_params() {
     assert_eq!(nn[0][1].v_reset, 1.6);
     assert_eq!(nn[1][2].v_reset, 1.4);
 }
+
+#[cfg(feature = "expose-test-solver")]
+#[test]
+fn test_solver_v1() {
+    use pds_spiking_nn::test_solver;
+    
+    let nn = NNBuilder::<LeakyIntegrateFire, _>::new()
+        .layer(
+            [
+                LifNeuron::new(&LifNeuronConfig::new(2.0, 0.5, 3.0, 1.6)),
+                LifNeuron::new(&LifNeuronConfig::new(1.5, 0.4, 3.1, 1.2)),
+                LifNeuron::new(&LifNeuronConfig::new(1.6, 0.3, 2.8, 1.1))
+            ],
+            [1.1, 1.2, 1.1],
+            [
+                [0.0, -0.1, -0.2],
+                [-0.15, 0.0, -0.1],
+                [-0.2, -0.15, 0.0]
+            ]
+        )
+        .layer(
+            [
+                LifNeuron::new(&LifNeuronConfig::new(1.8, 0.5, 2.8, 1.5)),
+                LifNeuron::new(&LifNeuronConfig::new(1.7, 0.8, 2.6, 1.6))
+            ],
+            [
+                [0.9, 0.85],
+                [0.8, 0.9],
+                [0.85, 0.7]
+            ],
+            [
+                [0.0, -0.2],
+                [-0.15, 0.0]
+            ]
+        )
+        .build();
+
+    let spikes = Spike::create_terminal_vec(
+        vec![
+            Spike::spike_vec_for(0, vec![2, 5, 6, 10]),
+            Spike::spike_vec_for(1, vec![3, 7, 8, 10]),
+            Spike::spike_vec_for(2, vec![4, 9, 12])
+        ]
+    );
+
+    let mut test_solver = test_solver::Solver::new(spikes, nn);
+
+    assert_eq!(
+        test_solver.solve(),
+        vec![
+            vec![8],
+            vec![6]
+        ]
+    );
+}

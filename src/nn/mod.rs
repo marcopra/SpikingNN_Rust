@@ -11,8 +11,13 @@ pub mod layer;
 pub mod model;
 pub mod builder;
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "expose-test-solver")))]
 pub(crate) mod solver_v1;
+#[cfg(any(
+    all(not(test), feature = "expose-test-solver"),
+    all(test,      feature = "expose-test-solver")
+))]
+pub mod solver_v1;
 #[cfg(test)]
 mod tests;
 
